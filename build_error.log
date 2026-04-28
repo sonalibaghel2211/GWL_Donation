@@ -1,0 +1,126 @@
+
+> build
+> react-router build
+
+vite v6.4.1 building for production...
+transforming...
+✓ 1307 modules transformed.
+✗ Build failed in 2.39s
+[vite]: Rollup failed to resolve import "chart.js" from "/opt/php70/Shopify-apps/Donation-App/donations/app/routes/app.track-donation.tsx".
+This is most likely unintended because it can break your application at runtime.
+If you do want to externalize this module explicitly add it to
+`build.rollupOptions.external`
+    at viteLog (file:///opt/php70/Shopify-apps/Donation-App/donations/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:46374:15)
+    at file:///opt/php70/Shopify-apps/Donation-App/donations/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:46432:18
+    at onwarn (/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@react-router/dev/dist/cli/index.js:1688:11)
+    at file:///opt/php70/Shopify-apps/Donation-App/donations/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:46430:7
+    at onRollupLog (file:///opt/php70/Shopify-apps/Donation-App/donations/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:46422:5)
+    at onLog (file:///opt/php70/Shopify-apps/Donation-App/donations/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:46072:7)
+    at file:///opt/php70/Shopify-apps/Donation-App/donations/node_modules/rollup/dist/es/shared/node-entry.js:21369:32
+    at Object.logger [as onLog] (file:///opt/php70/Shopify-apps/Donation-App/donations/node_modules/rollup/dist/es/shared/node-entry.js:23364:9)
+    at ModuleLoader.handleInvalidResolvedId (file:///opt/php70/Shopify-apps/Donation-App/donations/node_modules/rollup/dist/es/shared/node-entry.js:22108:26)
+    at file:///opt/php70/Shopify-apps/Donation-App/donations/node_modules/rollup/dist/es/shared/node-entry.js:22066:26 {
+  watchFiles: [
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/entry.client.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/root.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/webhooks.subscription_contracts.create.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/webhooks.subscription_contracts.update.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/webhooks.app_subscriptions.update.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/apps.pos-donation.settings.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/webhooks.app.scopes_update.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/api.resend-donation-email.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/webhooks.orders.cancelled.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/webhooks.app.uninstalled.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/api.setup-selling-plans.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/webhooks.refunds.create.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/webhooks.orders.create.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/api.block-config.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/api.pos-donation.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/api.pos-donation.settings.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/api.campaigns.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/auth.login/route.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/_index/route.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/auth.$.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/app.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/app.preset-donation_.delete.$id.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/app.preset-donation_.edit.$id.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/app.preset-donation_.add.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/app.recurring-donation.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/app.donation-activity.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/app.perset-donation.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/app.preset-donation.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/app.email-settings.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/app.track-donation.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/app.pos-donation.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/app.analytics.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/app.billing.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/app.pricing.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/app.roundup.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/app._index.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/app.help.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/package.json',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/routes/_index/styles.module.css',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/components/AnalyticsComponent.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/components/CampaignList.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/components/ConfigurationTab.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/components/SettingsTab.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/components/AddCampaign.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/utils/features.ts',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/components/TrackDonationComponent.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/components/AnalyticsDonationList.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/components/RichTextEditor.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/app/components/CampaignPreview.tsx',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/react/jsx-runtime.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/react/index.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/react-dom/client.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/react-router/dist/development/dom-export.mjs',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/index.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/styles.css',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/types.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/configure.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/utilities/color-transformers.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/shared.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/utilities/within-content-context.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/utilities/use-event-listener.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/utilities/use-theme.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/utilities/breakpoints.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/utilities/use-index-resource-state.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/AppProvider/AppProvider.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/AccountConnection/AccountConnection.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/ActionList/ActionList.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/ActionMenu/ActionMenu.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/Autocomplete/Autocomplete.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/Backdrop/Backdrop.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/Avatar/Avatar.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/Badge/types.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/Badge/Badge.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/Banner/Banner.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/Bleed/Bleed.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/Box/Box.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/Breadcrumbs/Breadcrumbs.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/BulkActions/BulkActions.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/Button/Button.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/Button/utils.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/ButtonGroup/ButtonGroup.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/CalloutCard/CalloutCard.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/Card/Card.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/Checkbox/Checkbox.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/ChoiceList/ChoiceList.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/Collapsible/Collapsible.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/ColorPicker/ColorPicker.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/InlineGrid/InlineGrid.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/Combobox/Combobox.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/Connected/Connected.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/ContextualSaveBar/ContextualSaveBar.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/DataTable/DataTable.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/DatePicker/DatePicker.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/DescriptionList/DescriptionList.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/Divider/Divider.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/DropZone/DropZone.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/EmptySearchResult/EmptySearchResult.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/EmptyState/EmptyState.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/EventListener/EventListener.js',
+    '/opt/php70/Shopify-apps/Donation-App/donations/node_modules/@shopify/polaris/build/esm/components/ExceptionList/ExceptionList.js',
+    ... 1150 more items
+  ]
+}

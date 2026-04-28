@@ -1,0 +1,238 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Session {
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?
+  expires             DateTime?
+  accessToken         String
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
+  refreshToken        String?
+  refreshTokenExpires DateTime?
+}
+
+model PosDonationSettings {
+  id              String   @id @default(uuid())
+  shop            String   @unique
+  enabled         Boolean  @default(false)
+  donationType    String   @default("percentage")
+  donationValue   Float    @default(5.0)
+  minimumValue    Float    @default(0)
+  donationMessage String   @default("{donationAmount} of {totalOrderValue} will be donated to charity")
+  tooltipMessage  String   @default("A portion of your purchase supports charity")
+  orderTag        String   @default("galaxy_pos_donation")
+  donationBasis   String   @default("order")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Campaign {
+  id                 String     @id @default(uuid())
+  shop               String
+  name               String
+  description        String
+  enabled            Boolean    @default(true)
+  category           String     @default("Uncategorized")
+  imageUrl           String?
+  displayStyle       String     @default("tabs")
+  donationAmounts    String     @default("[]")
+  allowOtherAmount   Boolean    @default(true)
+  otherAmountTitle   String     @default("Other")
+  shopifyProductId   String?
+  shopifyVariantIds  String     @default("[]")
+  isRecurringEnabled Boolean    @default(false)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  donations          Donation[]
+}
+
+model Donation {
+  id               String   @id @default(uuid())
+  campaignId       String
+  orderId          String?
+  orderNumber      String?
+  amount           Float
+  currency         String   @default("USD")
+  donorEmail       String?
+  donorName        String?
+  message          String?
+  shopifyProductId String?
+  shopifyVariantId String?
+  createdAt        DateTime @default(now())
+  campaign         Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, shopifyVariantId])
+}
+
+model BlockConfig {
+  id                  String  @id @default(uuid())
+  shop                String  @unique
+  productBlockEnabled Boolean @default(true)
+  cartBlockEnabled    Boolean @default(true)
+}
+
+model PosDonationLog {
+  id             String    @id @default(uuid())
+  shop           String
+  orderId        String    @unique
+  orderNumber    String?
+  donationAmount Float
+  orderTotal     Float
+  currency       String    @default("USD")
+  status         String    @default("active")
+  receiptStatus  String    @default("pending")
+  receiptSentAt  DateTime?
+  isResent       Boolean   @default(false)
+  type           String    @default("pos")
+  createdAt      DateTime  @default(now())
+}
+
+model EmailSettings {
+  id             String   @id @default(uuid())
+  shop           String   @unique
+  contactEmail   String   @default("donations@yourstore.com")
+  ccEmail        String?  @default("")
+  receiptSubject String   @default("Thank you for your donation")
+  receiptBody    String   @default("We've received your generous donation of <strong>{{currency}}{{amount}}</strong> along with your order {{orderNumber}}.")
+  refundSubject  String   @default("Donation Refund Confirmation")
+  refundBody     String   @default("We're writing to confirm that the donation of <strong>{{currency}}{{amount}}</strong> associated with order {{orderNumber}} has been refunded.")
+  cancelSubject  String   @default("Donation Cancellation")
+  cancelBody     String   @default("The donation of <strong>{{currency}}{{amount}}</strong> associated with your cancelled order {{orderNumber}} has also been marked as cancelled.")
+  pauseSubject   String   @default("Subscription Paused")
+  pauseBody      String   @default("Your subscription for <strong>{{donation_name}}</strong> has been paused.")
+  resumeSubject  String   @default("Subscription Resumed")
+  resumeBody     String   @default("Your subscription for <strong>{{donation_name}}</strong> has been resumed.")
+  logoUrl        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model PlanSubscription {
+  id             String   @id @default(uuid())
+  shop           String   @unique
+  plan           String   @default("basic")
+  subscriptionId String?
+  status         String   @default("pending")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  pendingPlan    String?
+}
+
+model RecurringDonationConfig {
+  id                 String   @id @default(uuid())
+  shop               String   @unique
+  productId          String   @default("9957801099511")
+  productGid         String   @default("gid://shopify/Product/9957801099511")
+  sellingPlanGroupId String?
+  monthlyPlanId      String?
+  weeklyPlanId       String?
+  isActive           Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model AppSettings {
+  id              String   @id @default(uuid())
+  shop            String   @unique
+  enabled         Boolean  @default(true)
+  widgetTitle     String   @default("Donation")
+  buttonText      String   @default("Donate")
+  additionalCss   String   @default("")
+  displayThankYou Boolean  @default(true)
+  thankYouMessage String   @default("Thanks for Donating!!!!!!!")
+  sendReceipt     Boolean  @default(true)
+  receiveReceipt  Boolean  @default(true)
+  contactEmail    String   @default("")
+  ccEmail         String   @default("")
+  subjectLine     String   @default("Donation Receipt")
+  emailTemplate   String   @default("")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model RecurringDonationLog {
+  id                     String    @id @default(uuid())
+  shop                   String
+  orderId                String    @unique
+  orderNumber            String?
+  donationAmount         Float
+  orderTotal             Float
+  currency               String    @default("USD")
+  status                 String    @default("active")
+  receiptStatus          String    @default("pending")
+  receiptSentAt          DateTime?
+  sellingPlanId          String?
+  subscriptionContractId String?
+  frequency              String    @default("one_time")
+  isResent               Boolean   @default(false)
+  type                   String    @default("recurring")
+  createdAt              DateTime  @default(now())
+}
+
+model RoundUpDonationSettings {
+  id                        String   @id @default(uuid())
+  shop                      String   @unique
+  enabled                   Boolean  @default(false)
+  campaignTitle             String   @default("Donation for better society")
+  description               String   @default("Your donation contributes to a better society.")
+  showImage                 Boolean  @default(true)
+  checkboxLabel             String   @default("Yes, I want to donate (amount)")
+  rounding                  String   @default("nearest1")
+  donationOrderTag          String   @default("roundUpDonation")
+  customAmount              String?
+  imageUrl                  String?
+  additionalDonationEnabled Boolean  @default(false)
+  additionalDonationTitle   String   @default("Add an extra donation (optional)")
+  placeholderText           String   @default("Enter amount")
+  buttonText                String   @default("Donate")
+  productId                 String?
+  productHandle             String?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+}
+
+model subscription {
+  id              String   @id @default(cuid())
+  shop            String
+  customerId      String
+  orderId         String   @unique
+  status          String
+  frequency       String
+  amount          Float
+  currency        String
+  nextBillingDate DateTime
+  createdAt       DateTime @default(now())
+}
+
+model CustomerSubscription {
+  id             String   @id @default(uuid())
+  shop           String
+  customerId     String
+  customerName   String?
+  customerEmail  String?
+  orderId        String?
+  orderName      String?
+  amount         Float
+  currency       String   @default("USD")
+  interval       String   @default("Monthly")
+  status         String   @default("active")
+  subscriptionId String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}

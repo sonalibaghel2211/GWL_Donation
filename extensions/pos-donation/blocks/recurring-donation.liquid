@@ -1,0 +1,493 @@
+{% assign is_donation = false %}
+{% if product.tags contains 'Donation' or product.tags contains 'donation' or product.type contains 'Donation' or product.type contains 'donation' %}
+  {% assign is_donation = true %}
+{% endif %}
+
+{% unless is_donation %}
+  {% for group in product.selling_plan_groups %}
+    {% if group.name contains "Recurring Donation" or group.name == "Recurring Donations" %}
+      {% assign is_donation = true %}
+      {% break %}
+    {% endif %}
+  {% endfor %}
+{% endunless %}
+
+{% if is_donation and product.selling_plan_groups.size > 0 %}
+  <div id="donation-widget-container" class="rc-premium-outer">
+    
+    <!-- Loading State -->
+    <div id="donation-loading" class="rc-loading-overlay" style="display: none;">
+      <div class="rc-spinner"></div>
+      <span>Verifying subscription status...</span>
+    </div>
+
+    <!-- Active Subscription UI -->
+    <div id="subscription-management-ui" class="rc-active-panel" style="display: none;">
+      <div class="rc-active-header">
+        <div class="rc-active-icon">✨</div>
+        <h4 class="rc-title">Your Active Support</h4>
+      </div>
+      <div id="active-subscription-message" class="rc-active-body">
+        Thank you! You are currently support us with a <span id="current-plan-name" class="rc-plan-badge"></span> donation.
+      </div>
+      <div class="rc-action-row">
+        <button id="btn-switch-plan" class="rc-btn-accent">
+          Switch to <span id="other-plan-name"></span>
+        </button>
+        <button id="btn-cancel-subscription" class="rc-btn-ghost">
+          Cancel Subscription
+        </button>
+      </div>
+    </div>
+
+    <!-- Normal Purchase UI -->
+    <div id="donation-purchase-ui" class="rc-purchase-panel">
+      <h4 class="rc-title">
+        {{ block.settings.heading | default: "Donation Frequency" }}
+      </h4>
+      
+      <div class="rc-toggle-container">
+        <label class="rc-toggle-option">
+          <input type="radio" name="donation_type_toggle" value="one_time" checked onchange="updateSellingPlanUi()">
+          <div class="rc-toggle-pill">One-time</div>
+        </label>
+        
+        <label class="rc-toggle-option">
+          <input type="radio" name="donation_type_toggle" value="recurring" onchange="updateSellingPlanUi()">
+          <div class="rc-toggle-pill">Recurring</div>
+        </label>
+        <div class="rc-toggle-slider"></div>
+      </div>
+
+      <div id="recurring-plan-options" class="rc-plan-selector" style="display: none;">
+        <p class="rc-selector-hint">Choose your supporting frequency:</p>
+        <div class="rc-select-group">
+          <select id="recurring-selling-plan-select" class="rc-fancy-select" onchange="updateHiddenSellingPlanInput()">
+            {% assign seen_plans = "" %}
+            {% for group in product.selling_plan_groups %}
+              {% if group.name contains "Recurring Donation" or group.name == "Recurring Donations" %}
+                {% for plan in group.selling_plans %}
+                  {% assign plan_name_lower = plan.name | downcase %}
+                  {% unless seen_plans contains plan_name_lower %}
+                    <option value="{{ plan.id }}">{{ plan.name }}</option>
+                    {% assign seen_plans = seen_plans | append: plan_name_lower | append: "," %}
+                  {% endunless %}
+                {% endfor %}
+              {% endif %}
+            {% endfor %}
+          </select>
+          <div class="rc-select-arrow">▼</div>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      .rc-premium-outer {
+        margin: 24px 0;
+        position: relative;
+        font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+      }
+      .rc-loading-overlay {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: 40px;
+        background: rgba(255,255,255,0.9);
+        backdrop-filter: blur(4px);
+        border-radius: 18px;
+        color: #6d7175;
+        font-size: 14px;
+        z-index: 10;
+        border: 1px solid #f0f1f2;
+      }
+      .rc-spinner {
+        width: 28px;
+        height: 28px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #6C4A79;
+        border-radius: 50%;
+        animation: rc-spin 0.8s linear infinite;
+      }
+      @keyframes rc-spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      .rc-active-panel, .rc-purchase-panel {
+        background: #ffffff;
+        border: 1px solid #f0f1f2;
+        border-radius: 18px;
+        padding: 24px;
+        box-shadow: 0 4px 15px -3px rgba(0,0,0,0.05);
+      }
+      .rc-active-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .rc-active-icon {
+        font-size: 20px;
+      }
+      .rc-title {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 700;
+        color: #1a1c1d;
+        letter-spacing: -0.01em;
+      }
+      .rc-active-body {
+        font-size: 14.5px;
+        color: #4a4a4a;
+        line-height: 1.6;
+        margin-bottom: 24px;
+      }
+      .rc-plan-badge {
+        display: inline-block;
+        padding: 2px 10px;
+        background: #f7f3f9;
+        color: #6C4A79;
+        border-radius: 100px;
+        font-weight: 700;
+        font-size: 13px;
+      }
+      .rc-action-row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .rc-btn-accent {
+        padding: 12px 24px;
+        background: #6C4A79;
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 12px rgba(108, 74, 121, 0.2);
+      }
+      .rc-btn-accent:hover {
+        background: #5a3d65;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(108, 74, 121, 0.3);
+      }
+      .rc-btn-ghost {
+        padding: 12px 20px;
+        background: transparent;
+        color: #6d7175;
+        border: 1px solid #dfe3e8;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .rc-btn-ghost:hover {
+        background: #fff5f4;
+        color: #d82c0d;
+        border-color: #fdb4ac;
+      }
+      .rc-toggle-container {
+        position: relative;
+        display: flex;
+        background: #f4f6f8;
+        padding: 4px;
+        border-radius: 12px;
+        margin-bottom: 24px;
+        isolation: isolate;
+      }
+      .rc-toggle-option {
+        position: relative;
+        flex: 1;
+        cursor: pointer;
+        z-index: 2;
+      }
+      .rc-toggle-option input {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      .rc-toggle-pill {
+        padding: 10px;
+        text-align: center;
+        font-size: 14px;
+        font-weight: 600;
+        color: #6d7175;
+        transition: color 0.3s ease;
+      }
+      .rc-toggle-option input:checked + .rc-toggle-pill {
+        color: #1a1c1d;
+      }
+      .rc-toggle-slider {
+        position: absolute;
+        top: 4px;
+        left: 4px;
+        width: calc(50% - 4px);
+        height: calc(100% - 8px);
+        background: #ffffff;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+        z-index: 1;
+      }
+      .rc-toggle-option:nth-child(2) input:checked ~ .rc-toggle-slider {
+        transform: translateX(100%);
+      }
+      .rc-plan-selector {
+        padding-top: 20px;
+        border-top: 1px dashed #e1e3e5;
+        animation: rc-fade-in 0.4s ease;
+      }
+      @keyframes rc-fade-in {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .rc-selector-hint {
+        font-size: 13px;
+        font-weight: 600;
+        color: #6d7175;
+        margin: 0 0 10px;
+      }
+      .rc-select-group {
+        position: relative;
+        max-width: 320px;
+      }
+      .rc-fancy-select {
+        width: 100%;
+        padding: 12px 14px;
+        background: #ffffff;
+        border: 1.5px solid #dfe3e8;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        color: #1a1c1d;
+        appearance: none;
+        outline: none;
+        transition: all 0.2s ease;
+      }
+      .rc-fancy-select:focus {
+        border-color: #6C4A79;
+        box-shadow: 0 0 0 4px rgba(108, 74, 121, 0.05);
+      }
+      .rc-select-arrow {
+        position: absolute;
+        right: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 10px;
+        color: #919eab;
+        pointer-events: none;
+      }
+    </style>
+  </div>
+
+  <script>
+    var currentContractId = null;
+    var currentFrequency = null;
+
+    async function checkSubscriptionStatus() {
+      {% if customer %}
+        var customerId = "gid://shopify/Customer/{{ customer.id }}";
+        var shop = "{{ shop.permanent_domain }}";
+        
+        var purchaseUi = document.getElementById('donation-purchase-ui');
+        var loadingUi = document.getElementById('donation-loading');
+        var manageUi = document.getElementById('subscription-management-ui');
+
+        if (purchaseUi) purchaseUi.style.display = 'none';
+        if (loadingUi) loadingUi.style.display = 'flex';
+
+        try {
+          var response = await fetch(`/apps/pos-donation/api/customer/subscription-status?customer_id=${encodeURIComponent(customerId)}`);
+          var data = await response.json();
+
+          if (loadingUi) loadingUi.style.display = 'none';
+
+          if (data.hasSubscription) {
+            currentContractId = data.contractId;
+            currentFrequency = data.frequency;
+            
+            if (manageUi) manageUi.style.display = 'block';
+            var planBadge = document.getElementById('current-plan-name');
+            if (planBadge) planBadge.textContent = data.planName;
+            
+            var otherPlanText = document.getElementById('other-plan-name');
+            var otherPlan = data.frequency === 'monthly' ? 'weekly' : 'monthly';
+            if (otherPlanText) otherPlanText.textContent = otherPlan.charAt(0).toUpperCase() + otherPlan.slice(1);
+            
+            setupActionListeners();
+          } else {
+            if (purchaseUi) purchaseUi.style.display = 'block';
+          }
+        } catch (e) {
+          console.error("Error checking status:", e);
+          if (loadingUi) loadingUi.style.display = 'none';
+          if (purchaseUi) purchaseUi.style.display = 'block';
+        }
+      {% endif %}
+    }
+
+    function setupActionListeners() {
+      var cancelBtn = document.getElementById('btn-cancel-subscription');
+      if (cancelBtn) {
+        cancelBtn.onclick = async function() {
+          if (!confirm("Are you sure you want to cancel your donation subscription?")) return;
+          this.disabled = true;
+          this.textContent = "Cancelling...";
+          try {
+            var response = await fetch('/apps/pos-donation/api/customer/subscription-action', {
+              method: 'POST',
+              body: JSON.stringify({ action: 'CANCEL', contractId: currentContractId }),
+              headers: { 'Content-Type': 'application/json' }
+            });
+            var data = await response.json();
+            if (data.success) {
+              location.reload();
+            } else {
+              alert("Error: " + (data.error || "Unknown error"));
+              this.disabled = false;
+              this.textContent = "Cancel Donation";
+            }
+          } catch(e) {
+            alert("Network error");
+            this.disabled = false;
+            this.textContent = "Cancel Donation";
+          }
+        };
+      }
+
+      var switchBtn = document.getElementById('btn-switch-plan');
+      if (switchBtn) {
+        switchBtn.onclick = async function() {
+          var newFreq = currentFrequency === 'monthly' ? 'weekly' : 'monthly';
+          if (!confirm("Switch your donation to " + newFreq + "?")) return;
+          this.disabled = true;
+          this.textContent = "Switching...";
+          try {
+            var response = await fetch('/apps/pos-donation/api/customer/subscription-action', {
+              method: 'POST',
+              body: JSON.stringify({ action: 'SWITCH', contractId: currentContractId, newFrequency: newFreq }),
+              headers: { 'Content-Type': 'application/json' }
+            });
+            var data = await response.json();
+            if (data.success) {
+              location.reload();
+            } else {
+              alert("Error: " + (data.error || "Unknown error"));
+              this.disabled = false;
+              this.textContent = "Switch to " + newFreq;
+            }
+          } catch(e) {
+            alert("Network error");
+            this.disabled = false;
+            this.textContent = "Switch to " + newFreq;
+          }
+        };
+      }
+    }
+
+    function updateSellingPlanUi() {
+      var isRecurringToggle = document.querySelector('input[name="donation_type_toggle"][value="recurring"]');
+      var planOptions = document.getElementById('recurring-plan-options');
+      if (!isRecurringToggle || !planOptions) return;
+      var isRecurring = isRecurringToggle.checked;
+      planOptions.style.display = isRecurring ? 'block' : 'none';
+      updateHiddenSellingPlanInput();
+    }
+
+    function updateHiddenSellingPlanInput() {
+      var form = document.querySelector('form[action^="/cart/add"], form[action*="/cart/add"], form[id^="product-form"], form.shopify-product-form');
+      if (form) {
+        var isRecurringToggle = document.querySelector('input[name="donation_type_toggle"][value="recurring"]');
+        var isRecurring = isRecurringToggle ? isRecurringToggle.checked : false;
+        var existingInput = form.querySelector('input[name="selling_plan"]');
+        var existingPropInput = form.querySelector('input[name="properties[_selling_plan_id]"]');
+
+        if (isRecurring) {
+          var select = document.getElementById('recurring-selling-plan-select');
+          var selectedPlanId = select ? select.value : null;
+          if (selectedPlanId) {
+            if (!existingInput) {
+              existingInput = document.createElement('input');
+              existingInput.type = 'hidden';
+              existingInput.name = 'selling_plan';
+              form.appendChild(existingInput);
+            }
+            existingInput.value = selectedPlanId;
+            if (!existingPropInput) {
+              existingPropInput = document.createElement('input');
+              existingPropInput.type = 'hidden';
+              existingPropInput.name = 'properties[_selling_plan_id]';
+              form.appendChild(existingPropInput);
+            }
+            existingPropInput.value = selectedPlanId;
+          }
+        } else {
+          if (existingInput) existingInput.remove();
+          if (existingPropInput) existingPropInput.remove();
+        }
+      }
+    }
+
+    (function() {
+      const originalFetch = window.fetch;
+      window.fetch = async function() {
+        let [resource, config] = arguments;
+        let urlStr = (typeof resource === 'string') ? resource : (resource instanceof Request ? resource.url : '');
+        if (urlStr.includes('/cart/add') && config && config.body) {
+          const isRecurring = document.querySelector('input[name="donation_type_toggle"][value="recurring"]')?.checked;
+          if (isRecurring) {
+            const select = document.getElementById('recurring-selling-plan-select');
+            const selectedPlanId = select ? select.value : null;
+            if (selectedPlanId) {
+                if (typeof config.body === 'string') {
+                    try {
+                        const bodyJson = JSON.parse(config.body);
+                        if (bodyJson.items && bodyJson.items.length > 0) {
+                            bodyJson.items[0].selling_plan = selectedPlanId;
+                            bodyJson.items[0].properties = bodyJson.items[0].properties || {};
+                            bodyJson.items[0].properties['_selling_plan_id'] = selectedPlanId;
+                        } else {
+                            bodyJson.selling_plan = selectedPlanId;
+                            bodyJson.properties = bodyJson.properties || {};
+                            bodyJson.properties['_selling_plan_id'] = selectedPlanId;
+                        }
+                        config.body = JSON.stringify(bodyJson);
+                    } catch(e) {}
+                } else if (config.body instanceof FormData) {
+                    config.body.set('selling_plan', selectedPlanId);
+                    config.body.set('properties[_selling_plan_id]', selectedPlanId);
+                }
+            }
+          }
+        }
+        return originalFetch.apply(this, arguments);
+      };
+    })();
+
+    document.addEventListener("DOMContentLoaded", function() {
+      checkSubscriptionStatus();
+      updateSellingPlanUi();
+      setInterval(updateHiddenSellingPlanInput, 1000);
+    });
+  </script>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Recurring Donation Toggle",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Donation Frequency"
+    }
+  ]
+}
+{% endschema %}

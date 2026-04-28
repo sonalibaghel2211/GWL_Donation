@@ -1,0 +1,261 @@
+{% comment %}
+  Donation Campaign (Cart Page) Block
+{% endcomment %}
+
+{% assign global_enabled = app.metafields.common.enabled.value %}
+<div
+  id="donation-cart-block-{{ block.id }}"
+  class="donation-cart-block dc-premium-outer"
+  data-block-id="{{ block.id }}"
+  data-api-url="{{ block.settings.api_base_url }}"
+  style="display: {% if global_enabled == false %}none{% else %}block{% endif %};"
+>
+  <div class="dc-premium-card">
+    <div class="donation-cart-block__loading dc-premium-loading" aria-live="polite">
+      <div class="dc-spinner"></div>
+      <span>Updating cart donations...</span>
+    </div>
+
+    <div class="donation-cart-block__content dc-premium-content" style="display:none">
+      <!-- Rendered by JS -->
+    </div>
+
+    <div class="donation-cart-block__error dc-premium-error" style="display:none" role="alert">
+      <p>Unable to load donation options. Please refresh.</p>
+    </div>
+  </div>
+
+  <style>
+    .dc-premium-outer {
+      margin: 24px 0;
+    }
+    .dc-premium-card {
+      background: #ffffff;
+      border: 1px solid #f0f1f2;
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 4px 15px -3px rgba(0,0,0,0.05), 0 2px 6px -2px rgba(0,0,0,0.03);
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+    }
+    .dc-premium-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      color: #6d7175;
+      font-size: 14px;
+      padding: 20px 0;
+    }
+    .dc-spinner {
+      width: 24px;
+      height: 24px;
+      border: 2.5px solid #f3f3f3;
+      border-top: 2.5px solid #008060;
+      border-radius: 50%;
+      animation: dc-spin 0.8s linear infinite;
+    }
+    @keyframes dc-spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .donation-cart-layout-wrap {
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+    .donation-cart-image-col {
+      flex: 0 0 160px;
+      max-width: 160px;
+    }
+    .donation-cart-main-img {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    }
+    .donation-cart-info-col {
+      flex: 1;
+      min-width: 280px;
+    }
+    .donation-cart-block__title {
+      margin: 0 0 8px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #1a1c1d;
+      letter-spacing: -0.01em;
+    }
+    .donation-cart-block__description {
+      font-size: 14px;
+      color: #6d7175;
+      margin: 0 0 16px;
+      line-height: 1.5;
+    }
+    @media screen and (max-width: 550px) {
+      .donation-cart-layout-wrap {
+        flex-direction: column;
+        gap: 16px;
+      }
+      .donation-cart-image-col {
+        flex: 1;
+        width: 100%;
+        max-width: 100%;
+      }
+      .donation-cart-main-img {
+        height: 200px;
+      }
+    }
+    .donation-cart-block__current {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      background: #f0fdf9;
+      border: 1px solid #a3e3d2;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #004c3f;
+    }
+    .donation-cart-block__amounts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .donation-cart-amount-btn {
+      flex: 1;
+      min-width: 65px;
+      padding: 8px 12px;
+      border: 2px solid #edeeef;
+      background: #ffffff;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #454f5b;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+    .donation-cart-amount-btn:hover {
+      border-color: #008060;
+      background: #f6fdfb;
+    }
+    .donation-cart-amount-btn.selected {
+      border-color: #008060;
+      background: #008060;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(0, 128, 96, 0.15);
+    }
+    .donation-cart-custom-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 10px 14px;
+      background: #f4f6f8;
+      border-radius: 10px;
+    }
+    .donation-cart-custom-input {
+      flex: 1;
+      padding: 6px 0;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid #dfe3e8;
+      font-size: 14px;
+      font-weight: 600;
+      color: #1a1c1d;
+      outline: none;
+    }
+    .donation-cart-custom-input:focus {
+      border-color: #008060;
+    }
+    .donation-cart-action-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .donation-cart-add-btn {
+      flex: 2;
+      padding: 12px;
+      background: #008060;
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 10px rgba(0, 128, 96, 0.1);
+      min-width: 140px;
+    }
+    .donation-cart-add-btn:hover {
+      background: #006e52;
+      box-shadow: 0 6px 12px rgba(0, 128, 96, 0.15);
+    }
+    .donation-cart-remove-btn {
+      flex: 1;
+      padding: 12px 16px;
+      background: #fff;
+      color: #d82c0d;
+      border: 1.5px solid #ffdbd6;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-width: 80px;
+    }
+    .donation-cart-remove-btn:hover {
+      background: #fff5f4;
+      border-color: #fdb4ac;
+      color: #c02008;
+    }
+    .donation-cart-block__feedback {
+      margin-top: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #008060;
+      text-align: center;
+      min-height: 18px;
+    }
+    .donation-cart-block__feedback.error {
+      color: #d82c0d;
+    }
+    .donation-campaign-select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 13.5px;
+      font-weight: 500;
+      margin-bottom: 20px;
+      background: #ffffff;
+      cursor: pointer;
+    }
+  </style>
+</div>
+
+<script src="{{ 'donation-cart.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Donation Cart Page",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "api_base_url",
+      "label": "App API Base URL"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Section Heading",
+      "default": "Add a Donation"
+    }
+  ]
+}
+{% endschema %}

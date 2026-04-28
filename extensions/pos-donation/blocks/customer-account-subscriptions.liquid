@@ -1,0 +1,96 @@
+{% comment %}
+  customer-account-subscriptions.liquid
+{% endcomment %}
+
+{% if request.page_type == 'customers/account' %}
+<div id="manage-subscriptions-widget" class="sm-standalone-wrap">
+  {% if customer %}
+    <a
+      href="/apps/pos-donation/subscriptions?logged_in_customer_id={{ customer.id }}"
+      class="sm-primary-btn"
+      style="background-color: {{ block.settings.button_color }}; color: {{ block.settings.text_color }};"
+    >
+      <span class="sm-btn-text">{{ block.settings.button_text | default: "Manage Subscription" }}</span>
+    </a>
+  {% endif %}
+</div>
+
+<style>
+  .sm-standalone-wrap {
+    padding: 24px 0;
+    display: flex;
+    justify-content: center;
+  }
+  .sm-primary-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 36px;
+    background: #1a1c1d;
+    color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 700;
+    white-space: nowrap;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+  .sm-primary-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    background: #000000;
+  }
+  @media screen and (max-width: 580px) {
+    .sm-card-body {
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 24px;
+    }
+    .sm-primary-btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Subscriptions Manager",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "section_title",
+      "label": "Section Title",
+      "default": "Manage Your Impact"
+    },
+    {
+      "type": "text",
+      "id": "section_description",
+      "label": "Section Description",
+      "default": "View and adjust your recurring donation commitments."
+    },
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Button Text",
+      "default": "Manage Subscription"
+    },
+    {
+      "type": "color",
+      "id": "button_color",
+      "label": "Button Color",
+      "default": "#1a1c1d"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text Color",
+      "default": "#ffffff"
+    }
+  ]
+}
+{% endschema %}

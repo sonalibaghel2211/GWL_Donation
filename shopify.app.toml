@@ -1,0 +1,44 @@
+client_id = "5e9227f773c4c143cc80ae8814fd8fcd"
+name = "GWL-Donations"
+application_url = "https://donation-production-87ca.up.railway.app/"
+embedded = true
+
+[webhooks]
+api_version = "2026-04"
+
+  [[webhooks.subscriptions]]
+  topics = ["app/scopes_update"]
+  uri = "/webhooks/app/scopes_update"
+
+  [[webhooks.subscriptions]]
+  topics = ["orders/create"]
+  uri = "/webhooks/orders/create"
+
+  [[webhooks.subscriptions]]
+  topics = ["app/uninstalled"]
+  uri = "/webhooks/app/uninstalled"
+
+  [[webhooks.subscriptions]]
+  topics = ["orders/cancelled"]
+  uri = "/webhooks/orders/cancelled"
+
+  [[webhooks.subscriptions]]
+  topics = ["refunds/create"]
+  uri = "/webhooks/refunds/create"
+
+[access_scopes]
+scopes = "read_customers,read_metaobjects,read_orders,read_publications,read_purchase_options,read_shopify_payments_payouts,write_customers,write_metaobject_definitions,write_metaobjects,write_orders,write_products,write_publications,write_purchase_options,read_own_subscription_contracts,write_own_subscription_contracts,read_draft_orders,write_draft_orders"
+
+[auth]
+redirect_urls = [
+  "https://donation-production-87ca.up.railway.app/auth/callback",
+  "https://donation-production-87ca.up.railway.app/api/auth"
+]
+
+[app_proxy]
+url = "https://donation-production-87ca.up.railway.app"
+subpath = "pos-donation"
+prefix = "apps"
+
+[build]
+automatically_update_urls_on_dev = true

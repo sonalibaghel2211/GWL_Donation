@@ -1,0 +1,436 @@
+{% assign global_enabled = app.metafields.common.enabled.value %}
+{% assign donation_settings = shop.metafields.roundup_donation.settings.value %}
+{% assign donation_product = all_products[donation_settings.productHandle] %}
+
+{% if donation_settings and donation_settings.enabled == true and cart.item_count > 0 %}
+<div id="roundup-container-{{ block.id }}" class="rd-premium-outer" style="display: {% if global_enabled == false %}none{% else %}block{% endif %};">
+  <div class="rd-premium-card">
+    <div class="rd-premium-header">
+      {% if donation_product.featured_image %}
+        <div class="rd-image-stack">
+          <img 
+            src="{{ donation_product.featured_image | image_url: width: 160 }}" 
+            alt="{{ donation_product.title }}"
+            class="rd-hero-image"
+            loading="lazy"
+          >
+          <div class="rd-image-overlay"></div>
+        </div>
+      {% endif %}
+      
+      <div class="rd-info-panel">
+        <h4 class="rd-title">{{ donation_product.title }}</h4>
+        <p class="rd-description">
+          {{ donation_product.description | strip_html | truncate: 110 }}
+        </p>
+      </div>
+    </div>
+
+    <div class="rd-premium-divider"></div>
+
+    <div class="rd-action-zone">
+      <label class="rd-check-wrapper">
+        <div class="rd-custom-checkbox">
+          <input type="checkbox" id="donate-check">
+          <span class="rd-check-visual"></span>
+        </div>
+        <span id="donation-label" class="rd-label-text">Loading donation...</span>
+      </label>
+
+      {% if donation_settings.additionalDonationEnabled != false %}
+        <div id="extra-donation-wrapper" class="rd-extra-panel">
+          <p class="rd-extra-title">
+            {{ donation_settings.extraTitle | default: block.settings.extra_title }}
+          </p>
+          <div class="rd-input-composition">
+            <div class="rd-input-wrapper">
+              <span class="rd-currency-symbol">₹</span>
+              <input 
+                type="number"
+                id="extra-donation-input"
+                placeholder="{{ donation_settings.placeholderText | default: block.settings.extra_placeholder }}"
+                class="rd-fancy-input"
+              >
+            </div>
+            <button id="extra-donation-btn" class="rd-submit-btn">
+              {{ donation_settings.buttonText | default: block.settings.extra_button }}
+            </button>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <style>
+    .rd-premium-outer {
+      padding: 32px 16px;
+      background: transparent;
+    }
+    .rd-premium-card {
+      background: #ffffff;
+      border: 1px solid #f0f1f2;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px -5px rgba(0,0,0,0.05), 0 4px 12px -5px rgba(0,0,0,0.03);
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+      transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.3s ease;
+    }
+    .rd-premium-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px -10px rgba(0,0,0,0.08);
+    }
+    .rd-premium-header {
+      display: flex;
+      padding: 24px;
+      gap: 20px;
+      align-items: center;
+    }
+    .rd-image-stack {
+      position: relative;
+      flex-shrink: 0;
+      width: 72px;
+      height: 72px;
+    }
+    .rd-hero-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 14px;
+      box-shadow: 0 8px 16px -4px rgba(0,0,0,0.1);
+    }
+    .rd-image-overlay {
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      border: 1px solid rgba(0,0,0,0.05);
+      pointer-events: none;
+    }
+    .rd-info-panel {
+      flex: 1;
+    }
+    .rd-title {
+      margin: 0 0 6px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #1a1c1d;
+      letter-spacing: -0.02em;
+    }
+    .rd-description {
+      margin: 0;
+      font-size: 13px;
+      color: #6d7175;
+      line-height: 1.5;
+    }
+    .rd-premium-divider {
+      height: 1px;
+      background: linear-gradient(90deg, rgba(225,227,229,0) 0%, rgba(225,227,229,1) 50%, rgba(225,227,229,0) 100%);
+      margin: 0 24px;
+    }
+    .rd-action-zone {
+      padding: 24px;
+    }
+    .rd-check-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      padding: 12px 16px;
+      background: #f9fafb;
+      border-radius: 12px;
+      transition: background 0.2s ease;
+    }
+    .rd-check-wrapper:hover {
+      background: #f4f6f8;
+    }
+    .rd-custom-checkbox {
+      position: relative;
+      width: 22px;
+      height: 22px;
+    }
+    .rd-custom-checkbox input {
+      position: absolute;
+      opacity: 0;
+      cursor: pointer;
+      height: 0;
+      width: 0;
+    }
+    .rd-check-visual {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 22px;
+      width: 22px;
+      background-color: #fff;
+      border: 2px solid #d1d5db;
+      border-radius: 6px;
+      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .rd-custom-checkbox:hover input ~ .rd-check-visual {
+      border-color: #9ca3af;
+    }
+    .rd-custom-checkbox input:checked ~ .rd-check-visual {
+      background-color: #1a1c1d;
+      border-color: #1a1c1d;
+    }
+    .rd-check-visual:after {
+      content: "";
+      position: absolute;
+      display: none;
+      left: 7px;
+      top: 2px;
+      width: 5px;
+      height: 11px;
+      border: solid white;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+    .rd-custom-checkbox input:checked ~ .rd-check-visual:after {
+      display: block;
+    }
+    .rd-label-text {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1a1c1d;
+    }
+    .rd-extra-panel {
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px dashed #e1e3e5;
+    }
+    .rd-extra-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #6d7175;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin: 0 0 12px;
+    }
+    .rd-input-composition {
+      display: flex;
+      gap: 12px;
+    }
+    .rd-input-wrapper {
+      position: relative;
+      flex: 1;
+    }
+    .rd-currency-symbol {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+      font-weight: 600;
+      color: #9ca3af;
+    }
+    .rd-fancy-input {
+      width: 100%;
+      padding: 12px 12px 12px 28px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 500;
+      background: #ffffff;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    .rd-fancy-input:focus {
+      border-color: #1a1c1d;
+      box-shadow: 0 0 0 4px rgba(26, 28, 29, 0.05);
+    }
+    .rd-submit-btn {
+      padding: 12px 24px;
+      background: #1a1c1d;
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .rd-submit-btn:hover {
+      background: #000;
+      transform: scale(1.02);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .rd-submit-btn:active {
+      transform: scale(0.98);
+    }
+    @media screen and (max-width: 480px) {
+      .rd-premium-header {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: center;
+        align-items: center;
+      }
+      .rd-input-composition {
+        flex-direction: column;
+      }
+      .rd-submit-btn {
+        width: 100%;
+      }
+    }
+  </style>
+</div>
+
+<script>
+(function () {
+  let VARIANTS = [];
+  {% for variant in donation_product.variants %}
+    VARIANTS.push({
+      price: {{ variant.price | divided_by: 100.0 }},
+      id: {{ variant.id }}
+    });
+  {% endfor %}
+
+  VARIANTS = VARIANTS.filter(v => v.price >= 1);
+  VARIANTS.sort((a, b) => b.price - a.price);
+  const ONE_RUPEE = VARIANTS.find(v => v.price === 1);
+
+  let settings = {};
+  try {
+    settings = {{ donation_settings | json }};
+  } catch (e) {}
+
+  async function getCart() {
+    return await fetch('/cart.js').then(r => r.json());
+  }
+
+  function getDonationAmount(mode, customAmount) {
+    if (mode === "nearest1") return 1;
+    if (mode === "nearest5") return 5;
+    if (mode === "nearest10") return 10;
+    if (mode === "custom") return parseFloat(customAmount || 1);
+    return 1;
+  }
+
+  async function removeType(type) {
+    const cart = await getCart();
+    const items = cart.items.filter(i =>
+      i.properties && i.properties.type === type
+    );
+    for (let item of items) {
+      await fetch('/cart/change.js', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ id: item.key, quantity: 0 })
+      });
+    }
+  }
+
+  function breakAmount(amount) {
+    let remaining = amount;
+    let items = [];
+    for (let v of VARIANTS) {
+      let qty = Math.floor(remaining / v.price);
+      if (qty > 0) {
+        items.push({
+          id: v.id,
+          quantity: qty,
+          properties: { type: "extra" }
+        });
+        remaining = +(remaining - qty * v.price).toFixed(2);
+      }
+    }
+    return items;
+  }
+
+  async function initDonation() {
+    const checkbox = document.getElementById("donate-check");
+    const label = document.getElementById("donation-label");
+    const input = document.getElementById("extra-donation-input");
+    const btn = document.getElementById("extra-donation-btn");
+    const wrapper = document.getElementById("extra-donation-wrapper");
+
+    if (!checkbox) return;
+
+    const cart = await getCart();
+    const mode = settings?.rounding || "nearest1";
+    const customAmount = settings?.customAmount || settings?.price || 0;
+
+    let donationAmount = getDonationAmount(mode, customAmount);
+    if (donationAmount <= 0) donationAmount = 1;
+
+    label.innerText = `Donate ₹${donationAmount} and make an impact`;
+
+    const existing = cart.items.find(i =>
+      i.properties && i.properties.type === "roundup"
+    );
+
+    if (existing) checkbox.checked = true;
+
+    checkbox.addEventListener("change", async function () {
+      if (this.checked) {
+        await removeType("roundup");
+        const quantity = Math.round(donationAmount / ONE_RUPEE.price);
+        await fetch('/cart/add.js', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            items: [{
+              id: ONE_RUPEE.id,
+              quantity: quantity,
+              properties: { type: "roundup" }
+            }]
+          })
+        });
+      } else {
+        await removeType("roundup");
+      }
+      location.reload();
+    });
+
+    if (btn) {
+      btn.addEventListener("click", async function () {
+        const value = parseFloat(input.value || 0);
+        if (!value || value <= 0) {
+          alert("Enter valid amount");
+          return;
+        }
+        await removeType("extra");
+        const items = breakAmount(value);
+        await fetch('/cart/add.js', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ items })
+        });
+        location.reload();
+      });
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", initDonation);
+  document.addEventListener("shopify:section:load", initDonation);
+})();
+</script>
+
+</div>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Round Up Donation",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "extra_title",
+      "label": "Extra Donation Title",
+      "default": "Add an extra donation"
+    },
+    {
+      "type": "text",
+      "id": "extra_placeholder",
+      "label": "Placeholder",
+      "default": "Enter amount"
+    },
+    {
+      "type": "text",
+      "id": "extra_button",
+      "label": "Button Text",
+      "default": "Donate"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,241 @@
+{% comment %}
+  Donation Campaign (Product Page) Block
+{% endcomment %}
+
+{% assign global_enabled = app.metafields.common.enabled.value %}
+<div
+  id="donation-product-block-{{ block.id }}"
+  class="donation-product-block dp-premium-outer"
+  data-block-id="{{ block.id }}"
+  data-api-url="{{ block.settings.api_base_url }}"
+  style="display: {% if global_enabled == false %}none{% else %}block{% endif %};"
+>
+  <div class="dp-premium-card">
+    <div class="donation-product-block__loading dp-premium-loading" aria-live="polite">
+      <div class="dp-spinner"></div>
+      <span>Discovering charitable causes...</span>
+    </div>
+
+    <div class="donation-product-block__content dp-premium-content" style="display:none">
+      <!-- Rendered by JS -->
+    </div>
+
+    <div class="donation-product-block__error dp-premium-error" style="display:none" role="alert">
+      <div class="dp-error-icon">⚠️</div>
+      <p>We're unable to load current campaigns. Please refresh.</p>
+    </div>
+  </div>
+
+  <style>
+    .dp-premium-outer {
+      margin: 24px 0;
+    }
+    .dp-premium-card {
+      background: #ffffff;
+      border: 1px solid #f0f1f2;
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 4px 15px -3px rgba(0,0,0,0.05), 0 2px 6px -2px rgba(0,0,0,0.03);
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+    }
+    .dp-premium-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      color: #6d7175;
+      font-size: 14px;
+      padding: 20px 0;
+    }
+    .dp-spinner {
+      width: 24px;
+      height: 24px;
+      border: 2.5px solid #f3f3f3;
+      border-top: 2.5px solid #008060;
+      border-radius: 50%;
+      animation: dp-spin 0.8s linear infinite;
+    }
+    @keyframes dp-spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .donation-product-layout-wrap {
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+    .donation-product-image-col {
+      flex: 0 0 160px;
+      max-width: 160px;
+    }
+    .donation-product-main-img {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    }
+    .donation-product-info-col {
+      flex: 1;
+      min-width: 280px;
+    }
+    .donation-product-block__title {
+      margin: 0 0 6px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #1a1c1d;
+      letter-spacing: -0.01em;
+    }
+    .donation-product-block__description {
+      font-size: 14px;
+      color: #6d7175;
+      margin: 0 0 20px;
+      line-height: 1.5;
+    }
+    @media screen and (max-width: 550px) {
+      .donation-product-layout-wrap {
+        flex-direction: column;
+        gap: 16px;
+      }
+      .donation-product-image-col {
+        flex: 1;
+        width: 100%;
+        max-width: 100%;
+      }
+      .donation-product-main-img {
+        height: 200px;
+      }
+    }
+    .donation-product-block__amounts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .donation-amount-btn {
+      flex: 1;
+      min-width: 75px;
+      padding: 10px 16px;
+      border: 2px solid #edeeef;
+      background: #ffffff;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #454f5b;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      text-align: center;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+    .donation-amount-btn:hover {
+      border-color: #008060;
+      background: #f6fdfb;
+      transform: translateY(-1px);
+    }
+    .donation-amount-btn.selected {
+      border-color: #008060;
+      background: #008060;
+      color: #ffffff;
+      box-shadow: 0 4px 10px rgba(0, 128, 96, 0.2);
+    }
+    .donation-custom-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 12px;
+      background: #f9fafb;
+      border-radius: 12px;
+    }
+    .donation-custom-input {
+      flex: 1;
+      padding: 8px 0;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid #d1d5db;
+      font-size: 15px;
+      font-weight: 600;
+      color: #1a1c1d;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+    .donation-custom-input:focus {
+      border-color: #008060;
+    }
+    .donation-add-btn {
+      width: 100%;
+      padding: 14px;
+      background: #008060;
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(0, 128, 96, 0.15);
+    }
+    .donation-add-btn:hover {
+      background: #006e52;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(0, 128, 96, 0.2);
+    }
+    .donation-product-block__feedback {
+      margin-top: 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #008060;
+      text-align: center;
+      min-height: 20px;
+    }
+    .donation-product-block__feedback.error {
+      color: #c9190b;
+    }
+    .donation-campaign-select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 20px;
+      background: #ffffff;
+      cursor: pointer;
+    }
+  </style>
+</div>
+
+<script src="{{ 'donation-product.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Donation Product Page",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "api_base_url",
+      "label": "App API Base URL"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Section Heading",
+      "default": "Support a Cause"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_description",
+      "label": "Show Campaign Description",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "allow_custom_amount",
+      "label": "Allow Custom Amount Input",
+      "default": true
+    }
+  ]
+}
+{% endschema %}

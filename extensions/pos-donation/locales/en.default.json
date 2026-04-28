@@ -1,0 +1,7 @@
+{
+  "pos_donation": {
+    "name": "POS Donation",
+    "heading": "Portion of Sale Donation",
+    "tooltip": "A portion of your purchase supports charity"
+  }
+}

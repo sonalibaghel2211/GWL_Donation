@@ -1,0 +1,7 @@
+api_version = "2026-04"
+
+[[extensions]]
+name = "pos-donation"
+handle = "pos-donation"
+uid = "f5f2c32d-ec0d-3d8e-d365-f11438c8f7a790379e7f"
+type = "theme"

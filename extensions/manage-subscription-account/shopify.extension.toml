@@ -1,0 +1,16 @@
+api_version = "2026-01"
+
+[[extensions]]
+name = "manage-subscription-account"
+handle = "manage-subscription-account"
+uid = "8c3b8ded-c2e8-e0e1-ba44-9d57fed043981bdb116d"
+type = "ui_extension"
+
+[[extensions.targeting]]
+module = "./src/OrderStatusBlock.jsx"
+target = "customer-account.order-index.block.render"
+
+[extensions.capabilities]
+api_access = true
+block_progress = true
+network_access = true
