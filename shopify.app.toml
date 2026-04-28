@@ -1,6 +1,6 @@
 client_id = "5e9227f773c4c143cc80ae8814fd8fcd"
 name = "GWL-Donations"
-application_url = "https://donation-production-87ca.up.railway.app/"
+application_url = "https://gwldonation-production.up.railway.app/"
 embedded = true
 
 [webhooks]
@@ -31,12 +31,12 @@ scopes = "read_customers,read_metaobjects,read_orders,read_publications,read_pur
 
 [auth]
 redirect_urls = [
-  "https://donation-production-87ca.up.railway.app/auth/callback",
-  "https://donation-production-87ca.up.railway.app/api/auth"
+  "https://gwldonation-production.up.railway.app/auth/callback",
+  "https://gwldonation-production.up.railway.app/api/auth"
 ]
 
 [app_proxy]
-url = "https://donation-production-87ca.up.railway.app"
+url = "https://gwldonation-production.up.railway.app"
 subpath = "pos-donation"
 prefix = "apps"
 
