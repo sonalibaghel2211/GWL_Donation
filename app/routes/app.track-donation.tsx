@@ -77,10 +77,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
             allDonations = [...allDonations, ...presetDonations];
         }
 
-        // Fetch POS & Round-Up Donations (Aggregate in memory to bypass Prisma validation issue)
+        // Fetch POS & Round-Up Donations
         if (typeFilter === "all" || typeFilter === "pos" || typeFilter === "roundup") {
-            // Using raw SQL because Prisma Client doesn't recognize 'type' column
-            const rawLogs = await prisma.$queryRaw<any[]>`SELECT * FROM PosDonationLog WHERE shop = ${shop}`;
+            const rawLogs = await prisma.posDonationLog.findMany({ where: { shop } });
 
             const filteredPos = rawLogs.filter(l => {
                 const dDate = new Date(l.createdAt);
@@ -94,7 +93,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
         // Fetch Recurring Donations
         if (typeFilter === "all" || typeFilter === "recurring") {
-            const rawRecurring = await prisma.$queryRaw<any[]>`SELECT * FROM RecurringDonationLog WHERE shop = ${shop}`;
+            const rawRecurring = await prisma.recurringDonationLog.findMany({ where: { shop } });
             const filteredRecurring = rawRecurring.filter(l => {
                 const dDate = new Date(l.createdAt);
                 return dDate >= startDate && dDate < endDate;

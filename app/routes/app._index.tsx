@@ -63,9 +63,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       where: { campaign: { shop }, createdAt: { gte: last7DaysDate } },
       _sum: { amount: true }
     }),
-    // Fetch all logs to aggregate safely in JS (using raw query to bypass unrecognized 'type' field in Prisma Client)
-    prisma.$queryRaw<any[]>`SELECT * FROM PosDonationLog WHERE shop = ${shop}`,
-    prisma.$queryRaw<any[]>`SELECT * FROM RecurringDonationLog WHERE shop = ${shop}`,
+    prisma.posDonationLog.findMany({ where: { shop } }),
+    prisma.recurringDonationLog.findMany({ where: { shop } }),
     prisma.appSettings.findUnique({ where: { shop } }),
     prisma.posDonationSettings.findUnique({ where: { shop } }),
     prisma.roundUpDonationSettings.findUnique({ where: { shop } }),

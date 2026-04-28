@@ -449,24 +449,48 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
             try {
                 if (hasDirectDonationProduct) {
-                    // Raw SQL Upsert for RecurringDonationLog
-                    const existing = await db.$queryRaw<{ id: string }[]>`SELECT id FROM RecurringDonationLog WHERE orderId = ${orderIdStr}`;
-                    if (existing.length > 0) {
-                        await db.$executeRaw`UPDATE RecurringDonationLog SET subscriptionContractId = ${subscriptionContractId}, type = 'recurring' WHERE orderId = ${orderIdStr}`;
-                    } else {
-                        await db.$executeRaw`INSERT INTO RecurringDonationLog (id, shop, orderId, orderNumber, donationAmount, orderTotal, currency, receiptStatus, receiptSentAt, sellingPlanId, frequency, subscriptionContractId, type, createdAt) 
-                            VALUES (${crypto.randomUUID()}, ${shop}, ${orderIdStr}, ${order.name}, ${parseFloat(donationAmtFormatted)}, ${parseFloat(order.total_price || 0)}, ${order.currency || "USD"}, ${emailStatus}, ${sentDate}, ${recurringSellingPlanId}, ${frequency}, ${subscriptionContractId}, 'recurring', ${new Date().toISOString()})`;
-                    }
+                    await db.recurringDonationLog.upsert({
+                        where: { orderId: orderIdStr },
+                        update: {
+                            subscriptionContractId: subscriptionContractId,
+                            type: "recurring",
+                        },
+                        create: {
+                            shop,
+                            orderId: orderIdStr,
+                            orderNumber: order.name,
+                            donationAmount: parseFloat(donationAmtFormatted),
+                            orderTotal: parseFloat(order.total_price || 0),
+                            currency: order.currency || "USD",
+                            receiptStatus: emailStatus,
+                            receiptSentAt: sentDate,
+                            sellingPlanId: recurringSellingPlanId,
+                            frequency: frequency,
+                            subscriptionContractId: subscriptionContractId,
+                            type: "recurring",
+                        },
+                    });
                 } else {
                     const logType = hasRoundUpDonation ? "roundup" : "pos";
-                    // Raw SQL Upsert for PosDonationLog
-                    const existing = await db.$queryRaw<{ id: string }[]>`SELECT id FROM PosDonationLog WHERE orderId = ${orderIdStr}`;
-                    if (existing.length > 0) {
-                        await db.$executeRaw`UPDATE PosDonationLog SET type = ${logType} WHERE orderId = ${orderIdStr}`;
-                    } else {
-                        await db.$executeRaw`INSERT INTO PosDonationLog (id, shop, orderId, orderNumber, donationAmount, orderTotal, currency, status, receiptStatus, receiptSentAt, isResent, type, createdAt) 
-                            VALUES (${crypto.randomUUID()}, ${shop}, ${orderIdStr}, ${order.name}, ${parseFloat(donationAmtFormatted)}, ${parseFloat(order.total_price || 0)}, ${order.currency || "USD"}, 'active', ${emailStatus}, ${sentDate}, 0, ${logType}, ${new Date().toISOString()})`;
-                    }
+                    await db.posDonationLog.upsert({
+                        where: { orderId: orderIdStr },
+                        update: {
+                            type: logType,
+                        },
+                        create: {
+                            shop,
+                            orderId: orderIdStr,
+                            orderNumber: order.name,
+                            donationAmount: parseFloat(donationAmtFormatted),
+                            orderTotal: parseFloat(order.total_price || 0),
+                            currency: order.currency || "USD",
+                            status: "active",
+                            receiptStatus: emailStatus,
+                            receiptSentAt: sentDate,
+                            isResent: false,
+                            type: logType,
+                        },
+                    });
                 }
             } catch (e) {
                 console.error("DB Log Error:", e);

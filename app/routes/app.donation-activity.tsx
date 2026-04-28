@@ -12,8 +12,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const { session, admin } = await authenticate.admin(request);
     const shop = session.shop;
 
-    const logs = await prisma.$queryRaw<any[]>`SELECT * FROM PosDonationLog WHERE shop = ${shop} ORDER BY createdAt DESC`;
-    const recurringLogs = await prisma.$queryRaw<any[]>`SELECT * FROM RecurringDonationLog WHERE shop = ${shop} ORDER BY createdAt DESC`;
+    const logs = await prisma.posDonationLog.findMany({
+        where: { shop },
+        orderBy: { createdAt: "desc" },
+    });
+    const recurringLogs = await prisma.recurringDonationLog.findMany({
+        where: { shop },
+        orderBy: { createdAt: "desc" },
+    });
 
     const presetDonations = await prisma.donation.findMany({
         where: {
@@ -182,7 +188,7 @@ export default function DonationActivity() {
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", color: "#202223" }}>
                             <span>Show</span>
-                            
+
                             <select
                                 value={pageSize}
                                 disabled={!checkFeatureAccess(plan, "canUseFilters")}

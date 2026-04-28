@@ -15,7 +15,10 @@ async function debug() {
     ));
 
     console.log("\n--- Counts by Type ---");
-    const counts = await prisma.$queryRaw`SELECT type, COUNT(*) as count FROM PosDonationLog GROUP BY type`;
+    const counts = await prisma.posDonationLog.groupBy({
+        by: ['type'],
+        _count: { type: true },
+    });
     console.log(JSON.stringify(counts, (key, value) =>
         typeof value === 'bigint' ? value.toString() : value, 2
     ));
