@@ -1,6 +1,6 @@
 client_id = "5e9227f773c4c143cc80ae8814fd8fcd"
 name = "GWL-Donations"
-application_url = "https://gwldonation-production.up.railway.app/"
+application_url = "https://gwldonation-production.up.railway.app"
 embedded = true
 
 [webhooks]
