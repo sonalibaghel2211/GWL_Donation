@@ -38,7 +38,7 @@ export default function SettingsTab({ initialSettings, shop }: { initialSettings
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div className="settings-field">
                 <s-text-field
-                  label="Title for Donation Widget ⓘ"
+                  label="Title for Donation Widget "
                   value={generalSettings.widgetTitle}
                   onInput={(e: any) => setGeneralSettings({ ...generalSettings, widgetTitle: e.target.value })}
                 ></s-text-field>
@@ -46,7 +46,7 @@ export default function SettingsTab({ initialSettings, shop }: { initialSettings
 
               <div className="settings-field">
                 <s-text-field
-                  label="Donation Button Text ⓘ"
+                  label="Donation Button Text "
                   value={generalSettings.buttonText}
                   onInput={(e: any) => setGeneralSettings({ ...generalSettings, buttonText: e.target.value })}
                 ></s-text-field>
@@ -54,7 +54,7 @@ export default function SettingsTab({ initialSettings, shop }: { initialSettings
 
               <div className="settings-field">
                 <label className="polaris-label" style={{ display: 'block', marginBottom: '4px', fontSize: '13px', fontWeight: 500 }}>
-                  Additional CSS ⓘ
+                  Additional CSS
                 </label>
                 <textarea
                   className="polaris-textarea"

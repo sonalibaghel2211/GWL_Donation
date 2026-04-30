@@ -540,6 +540,8 @@ export default function AddCampaignPage() {
   const [formData, setFormData] = useState<CampaignFormData>(initialFormData);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<boolean>(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [hasSaved, setHasSaved] = useState(false);
   const isSubmitting = fetcher.state === "submitting";
 
   useEffect(() => {
@@ -547,9 +549,9 @@ export default function AddCampaignPage() {
       if (fetcher.data.success) {
         setSubmitSuccess(true);
         setSubmitError(null);
-        setTimeout(() => {
-          navigate("/app/preset-donation");
-        }, 1500);
+        setIsDirty(false);
+        setHasSaved(true);
+        navigate("/app/preset-donation");
       } else {
         setSubmitError(
           fetcher.data.error || "An error occurred. Please try again.",
@@ -561,6 +563,8 @@ export default function AddCampaignPage() {
 
   const handleFormChange = (changes: Partial<CampaignFormData>) => {
     setFormData((prev) => ({ ...prev, ...changes }));
+    setIsDirty(true);
+    setHasSaved(false);
     if (submitError) setSubmitError(null);
   };
 
@@ -611,9 +615,9 @@ export default function AddCampaignPage() {
         slot="primary-action"
         variant="primary"
         onClick={handleSave}
-        disabled={isSubmitting}
+        disabled={isSubmitting || !isDirty}
       >
-        {isSubmitting ? "Creating..." : "Save Campaign"}
+        {isSubmitting ? "Saving..." : (isDirty ? "Save Changes" : "No Changes")}
       </s-button>
       <s-button
         slot="secondary-action"

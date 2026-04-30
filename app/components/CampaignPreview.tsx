@@ -108,7 +108,9 @@ export default function CampaignPreview({ formData }: CampaignPreviewProps) {
         <s-divider />
 
         <s-stack direction="block" gap="base">
-          <s-heading>{formData.name || "Campaign Title"}</s-heading>
+          <div style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}>
+            <s-heading>{formData.name || "Campaign Title"}</s-heading>
+          </div>
 
           {formData.imageUrl ? (
             <img
@@ -120,9 +122,11 @@ export default function CampaignPreview({ formData }: CampaignPreviewProps) {
             <div className="preview-image-placeholder">No Image</div>
           )}
 
-          <s-paragraph>
-            {formData.description || "Campaign description will appear here..."}
-          </s-paragraph>
+          <div style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}>
+            <s-paragraph>
+              {formData.description || "Campaign description will appear here..."}
+            </s-paragraph>
+          </div>
 
           <s-divider />
 
@@ -137,7 +141,7 @@ export default function CampaignPreview({ formData }: CampaignPreviewProps) {
           </s-button>
 
           <s-paragraph>
-            <s-text tone="subdued" as="span">
+            <s-text tone="neutral">
               Thank you for your support!
             </s-text>
           </s-paragraph>
@@ -212,21 +216,29 @@ export default function CampaignPreview({ formData }: CampaignPreviewProps) {
           accent-color: #008060;
         }
         .preview-price-bar {
-          display: flex;
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
           gap: 8px;
           margin-bottom: 12px;
-          flex-wrap: wrap;
         }
         .preview-price-btn {
-          flex: 1;
-          min-width: 60px;
-          padding: 12px 8px;
+          width: 100%;
+          padding: 12px 4px;
           border: 2px solid #008060;
           background: white;
           border-radius: 8px;
           cursor: pointer;
           font-weight: 600;
           color: #008060;
+          font-size: 13px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        @media screen and (max-width: 400px) {
+          .preview-price-bar {
+            grid-template-columns: repeat(3, 1fr);
+          }
         }
         .preview-text-box {
           margin-bottom: 12px;

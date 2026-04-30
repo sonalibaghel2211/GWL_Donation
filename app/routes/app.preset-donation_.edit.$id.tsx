@@ -317,56 +317,47 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
     // ── 2. Determine if image needs updating ──────────────────────────────────
     const existingUrl = existing.imageUrl ?? "";
-    const isNewBase64Image = imageUrl.startsWith("data:");
     const imageIsDifferent = imageUrl !== existingUrl;
-    const shouldUpdateImage = isNewBase64Image && imageIsDifferent;
+    let newImageUrl = existingUrl;
+    let imageNeedsDbUpdate = false;
 
-    console.log("[ACTION] isNewBase64Image:", isNewBase64Image);
+    console.log("[ACTION] imageUrl submitted:", imageUrl ? `length=${imageUrl.length}` : "empty");
+    console.log("[ACTION] existingUrl:", existingUrl);
     console.log("[ACTION] imageIsDifferent:", imageIsDifferent);
-    console.log("[ACTION] shouldUpdateImage:", shouldUpdateImage);
 
     // ── 3. Process image (upload to Shopify if needed) ────────────────────────
-    let newImageUrl = existingUrl;
-
-    if (shouldUpdateImage) {
-      console.log("[ACTION] Processing new image upload...");
-
-      if (existing.shopifyProductId) {
-        console.log(
-          "[ACTION] Uploading to Shopify product:",
-          existing.shopifyProductId,
-        );
-        const cdnUrl = await replaceProductImage(
-          admin,
-          existing.shopifyProductId,
-          imageUrl,
-        );
-
-        if (cdnUrl) {
-          newImageUrl = cdnUrl;
-          console.log("[ACTION] Shopify upload SUCCESS, new URL:", cdnUrl);
-        } else {
-          console.warn(
-            "[ACTION] Shopify upload failed, keeping existing image",
+    if (imageIsDifferent) {
+      imageNeedsDbUpdate = true;
+      if (imageUrl.startsWith("data:")) {
+        console.log("[ACTION] Processing new image upload to Shopify...");
+        if (existing.shopifyProductId) {
+          const cdnUrl = await replaceProductImage(
+            admin,
+            existing.shopifyProductId,
+            imageUrl,
           );
+          if (cdnUrl) {
+            newImageUrl = cdnUrl;
+            console.log("[ACTION] Shopify upload SUCCESS, new URL:", cdnUrl);
+          } else {
+            console.warn("[ACTION] Shopify upload failed, storing base64 in DB as fallback");
+            newImageUrl = imageUrl;
+          }
+        } else {
+          newImageUrl = imageUrl;
         }
       } else {
-        console.log("[ACTION] No Shopify product, storing base64 directly");
+        console.log("[ACTION] Image removed or set to non-base64 string");
         newImageUrl = imageUrl;
       }
     }
-
-    console.log(
-      "[ACTION] Final imageUrl to save:",
-      newImageUrl ? `length=${newImageUrl.length}` : "empty",
-    );
 
     // ── 4. Build DB patch ────────────────────────────────────────────────────
     const dbPatch: Record<string, unknown> = {};
 
     if (name !== existing.name) dbPatch.name = name;
     if (description !== existing.description) dbPatch.description = description;
-    if (shouldUpdateImage) dbPatch.imageUrl = newImageUrl;
+    if (imageNeedsDbUpdate) dbPatch.imageUrl = newImageUrl;
     if (enabled !== existing.enabled) dbPatch.enabled = enabled;
     if (displayStyle !== existing.displayStyle)
       dbPatch.displayStyle = displayStyle;
@@ -571,10 +562,6 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         ],
       };
 
-      if (shouldUpdateImage) {
-        shopifyInput.images = [{ src: newImageUrl }];
-      }
-
       const productResponse = await admin.graphql(
         `#graphql
         mutation UpdateDonationProduct($input: ProductInput!) {
@@ -649,10 +636,12 @@ export default function EditCampaignPage() {
   const fetcher = useFetcher();
   const { initialFormData } = useLoaderData<typeof loader>();
   const [formData, setFormData] = useState<CampaignFormData>(initialFormData);
+  const [isDirty, setIsDirty] = useState(false);
   const isSubmitting = fetcher.state === "submitting";
 
   const handleFormChange = (changes: Partial<CampaignFormData>) => {
     setFormData((prev) => ({ ...prev, ...changes }));
+    setIsDirty(true);
   };
 
   const handleSave = () => {
@@ -681,6 +670,7 @@ export default function EditCampaignPage() {
 
   useEffect(() => {
     if (fetcher.state === "idle" && fetcher.data?.success) {
+      setIsDirty(false);
       navigate("/app/preset-donation");
     }
   }, [fetcher.state, fetcher.data, navigate]);
@@ -693,9 +683,9 @@ export default function EditCampaignPage() {
         slot="primary-action"
         variant="primary"
         onClick={handleSave}
-        disabled={isSubmitting}
+        disabled={isSubmitting || !isDirty}
       >
-        {isSubmitting ? "Saving..." : "Save Changes"}
+        {isSubmitting ? "Saving..." : (isDirty ? "Save Changes" : "No Changes")}
       </s-button>
       <s-button
         slot="secondary-action"

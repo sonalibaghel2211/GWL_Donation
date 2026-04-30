@@ -25,7 +25,7 @@ export default function CampaignList({
   if (!campaigns || campaigns.length === 0) {
     return (
       <s-stack gap="base">
-        <s-icon type="search"></s-icon>
+
         <s-heading>No Campaigns Added Yet</s-heading>
         <s-paragraph>
           Add a campaign from the &apos;Add Campaign&apos; button above.

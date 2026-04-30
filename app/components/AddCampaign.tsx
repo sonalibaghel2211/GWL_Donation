@@ -122,22 +122,23 @@ export default function AddCampaign({
               onChange={handleFileChange}
             />
 
-            <div style={{ marginBottom: "8px" }}>
-              <s-button
-                variant="primary"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {formData.imageUrl ? "Change Image" : "Upload Image"}
-              </s-button>
-              {formData.imageUrl && (
+            <div style={{ marginBottom: "12px" }}>
+              <s-stack direction="inline" gap="base">
                 <s-button
-                  variant="secondary"
-                  onClick={() => onFormChange({ imageUrl: "" })}
-                  style={{ marginLeft: "8px" }}
+                  variant="primary"
+                  onClick={() => fileInputRef.current?.click()}
                 >
-                  Remove
+                  {formData.imageUrl ? "Change Image" : "Upload Image"}
                 </s-button>
-              )}
+                {formData.imageUrl && (
+                  <s-button
+                    variant="secondary"
+                    onClick={() => onFormChange({ imageUrl: "" })}
+                  >
+                    Remove
+                  </s-button>
+                )}
+              </s-stack>
             </div>
 
             {formData.imageUrl && (
@@ -228,7 +229,7 @@ export default function AddCampaign({
                 <s-text-field
                   label="Add amount"
                   value={newAmount}
-                  onChange={(e) => setNewAmount(e.currentTarget.value)}
+                  onChange={(e) => setNewAmount(e.currentTarget.value || "")}
                   autocomplete="off"
                   placeholder="e.g. 50"
                 />
