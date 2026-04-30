@@ -93,6 +93,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     if (!campaign) {
         return jsonResp({ success: false, error: "Campaign not found" }, 404);
     }
+    if (campaign.shop !== shop) {
+        // Return the same 404 to avoid leaking information about other stores' campaigns
+        return jsonResp({ success: false, error: "Campaign not found" }, 404);
+    }
 
     // ── 5. Resolve variant GID ────────────────────────────────────────────────
     let resolvedVariantId: string | null = variantId || null;

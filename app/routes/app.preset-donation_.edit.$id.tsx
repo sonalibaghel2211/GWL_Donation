@@ -234,12 +234,14 @@ async function replaceProductImage(
 // Loader
 // ─────────────────────────────────────────────────────────────────────────────
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
-  await authenticate.admin(request);
+  const { session } = await authenticate.admin(request);
   const id = params.id;
   if (!id) throw new Response("Missing id parameter", { status: 400 });
 
   const campaign = await prisma.campaign.findUnique({ where: { id } });
   if (!campaign) throw new Response("Campaign Not Found", { status: 404 });
+  if (campaign.shop !== session.shop)
+    throw new Response("Forbidden", { status: 403 });
 
   let donationAmounts = ["5", "10", "25"];
   if (campaign.donationAmounts) {
@@ -298,6 +300,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     const existing = await prisma.campaign.findUnique({ where: { id } });
     if (!existing)
       return data({ error: "Campaign not found" }, { status: 404 });
+    if (existing.shop !== session.shop)
+      return data({ error: "Forbidden" }, { status: 403 });
 
     console.log("[ACTION] === Starting campaign update ===");
     console.log("[ACTION] Campaign ID:", id);

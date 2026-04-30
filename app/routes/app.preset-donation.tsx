@@ -51,11 +51,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
     const [campaigns, totalCount, blockConfig, appSettings] = await Promise.all([
       prisma.campaign.findMany({
+        where: { shop: session.shop },
         orderBy: { createdAt: "desc" },
         skip,
         take: ITEMS_PER_PAGE,
       }),
-      prisma.campaign.count(),
+      prisma.campaign.count({ where: { shop: session.shop } }),
       prisma.blockConfig.findUnique({ where: { shop: session.shop } }),
       prisma.appSettings.findUnique({ where: { shop: session.shop } }),
     ]);
@@ -98,7 +99,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const intent = formData.get("intent");
 
   if (intent === "getCampaigns") {
+    const { session: adminSession } = await authenticate.admin(request);
     const campaigns = await prisma.campaign.findMany({
+      where: { shop: adminSession.shop },
       select: {
         id: true,
         name: true,
