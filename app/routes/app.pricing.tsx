@@ -167,9 +167,9 @@ export default function PricingPage() {
     const fetcher = useFetcher<typeof action>();
     const shopify = useAppBridge();
 
-    const moneyFormatter = new Intl.NumberFormat(undefined, {
+    const moneyFormatter = new Intl.NumberFormat('en-US', {
         style: 'currency',
-        currency: currency || "USD",
+        currency: "USD",
     });
 
     const isSubmitting = fetcher.state !== "idle";
