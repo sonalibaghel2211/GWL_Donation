@@ -234,7 +234,7 @@ async function replaceProductImage(
 // Loader
 // ─────────────────────────────────────────────────────────────────────────────
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  const { session, admin } = await authenticate.admin(request);
   const id = params.id;
   if (!id) throw new Response("Missing id parameter", { status: 400 });
 
@@ -264,7 +264,17 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     isRecurringEnabled: campaign.isRecurringEnabled,
   };
 
-  return { campaign, initialFormData };
+  const response = await admin.graphql(`
+      query {
+          shop {
+              currencyCode
+          }
+      }
+  `);
+  const shopData = await response.json();
+  const currency = shopData.data?.shop?.currencyCode || "USD";
+
+  return { campaign, initialFormData, currency };
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -275,6 +285,20 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     const { admin, session } = await authenticate.admin(request);
     const id = params.id;
     if (!id) return data({ error: "Missing ID" }, { status: 400 });
+
+    const response = await admin.graphql(`
+        query {
+            shop {
+                currencyCode
+            }
+        }
+    `);
+    const shopData = await response.json();
+    const currency = shopData.data?.shop?.currencyCode || "USD";
+    const moneyFormatter = new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency: currency,
+    });
 
     const formData = await request.formData();
 
@@ -395,7 +419,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
           // Robust parsing: strip non-numeric characters except decimal point
           const val = parseFloat(String(amount).replace(/[^0-9.]/g, ''));
           if (isNaN(val)) return false;
-          const formatted = `$${val.toFixed(2)}`;
+          const formatted = moneyFormatter.format(val);
           if (formattedSet.has(formatted)) return false;
           formattedSet.add(formatted);
           return true;
@@ -437,7 +461,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
             inventoryPolicy: "CONTINUE",
             inventoryItem: { tracked: false, requiresShipping: false },
             optionValues: [
-              { optionName: "Title", name: `$${val.toFixed(2)}` },
+              { optionName: "Title", name: moneyFormatter.format(val) },
             ],
           };
         });
@@ -634,7 +658,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 export default function EditCampaignPage() {
   const navigate = useNavigate();
   const fetcher = useFetcher();
-  const { initialFormData } = useLoaderData<typeof loader>();
+  const { initialFormData, currency } = useLoaderData<typeof loader>();
   const [formData, setFormData] = useState<CampaignFormData>(initialFormData);
   
   // Compute isDirty by comparing current formData with initialFormData
@@ -698,7 +722,7 @@ export default function EditCampaignPage() {
         Cancel
       </s-button>
       <div style={{ marginTop: '24px' }}>
-        <AddCampaign formData={formData} onFormChange={handleFormChange} />
+        <AddCampaign formData={formData} onFormChange={handleFormChange} currency={currency} />
       </div>
     </s-page>
   );

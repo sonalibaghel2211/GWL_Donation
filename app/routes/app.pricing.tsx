@@ -14,17 +14,28 @@ import { PLAN_DETAILS, type PlanType } from "../utils/features";
 // ─── Loader ─────────────────────────────────────────────────
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-    const { session } = await authenticate.admin(request);
+    const { session, admin } = await authenticate.admin(request);
     const shop = session.shop;
 
     const subscription = await prisma.planSubscription.findUnique({
         where: { shop },
     });
 
+    const response = await admin.graphql(`
+        query {
+            shop {
+                currencyCode
+            }
+        }
+    `);
+    const shopData = await response.json();
+    const currency = shopData.data?.shop?.currencyCode || "USD";
+
     return {
         currentPlan: subscription?.plan ?? "basic",
         status: subscription?.status ?? "active",
         subscriptionId: subscription?.subscriptionId ?? null,
+        currency,
     };
 };
 
@@ -152,9 +163,14 @@ const PRO_FEATURES = [
 ];
 
 export default function PricingPage() {
-    const { currentPlan, status } = useLoaderData<typeof loader>();
+    const { currentPlan, status, currency } = useLoaderData<typeof loader>();
     const fetcher = useFetcher<typeof action>();
     const shopify = useAppBridge();
+
+    const moneyFormatter = new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency: currency || "USD",
+    });
 
     const isSubmitting = fetcher.state !== "idle";
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -322,7 +338,7 @@ export default function PricingPage() {
                             <div style={{ fontSize: "18px", fontWeight: "700", marginBottom: "6px" }}>Basic</div>
                             <div style={{ fontSize: "13px", color: "#6D7175", marginBottom: "20px" }}>{PLAN_DETAILS.basic.description}</div>
                             <div style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
-                                <span style={{ fontSize: "36px", fontWeight: "800", color: activePlan === "basic" ? "#6C4A79" : "inherit" }}>{PLAN_DETAILS.basic.price}</span>
+                                <span style={{ fontSize: "36px", fontWeight: "800", color: activePlan === "basic" ? "#6C4A79" : "inherit" }}>{moneyFormatter.format(1.99)}</span>
                                 <span style={{ fontSize: "14px", color: "#6D7175" }}>/ month</span>
                             </div>
                         </div>
@@ -359,7 +375,7 @@ export default function PricingPage() {
                             <div style={{ fontSize: "18px", fontWeight: "700", marginBottom: "6px" }}>Advanced</div>
                             <div style={{ fontSize: "13px", color: "#6D7175", marginBottom: "20px" }}>{PLAN_DETAILS.advanced.description}</div>
                             <div style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
-                                <span style={{ fontSize: "36px", fontWeight: "800", color: "#6C4A79" }}>{PLAN_DETAILS.advanced.price}</span>
+                                <span style={{ fontSize: "36px", fontWeight: "800", color: "#6C4A79" }}>{moneyFormatter.format(4.99)}</span>
                                 <span style={{ fontSize: "14px", color: "#6D7175" }}>/ month</span>
                             </div>
                         </div>
@@ -392,7 +408,7 @@ export default function PricingPage() {
                             <div style={{ fontSize: "18px", fontWeight: "700", marginBottom: "6px" }}>Pro</div>
                             <div style={{ fontSize: "13px", color: "#6D7175", marginBottom: "20px" }}>{PLAN_DETAILS.pro.description}</div>
                             <div style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
-                                <span style={{ fontSize: "36px", fontWeight: "800", color: activePlan === "pro" ? "#6C4A79" : "inherit" }}>{PLAN_DETAILS.pro.price}</span>
+                                <span style={{ fontSize: "36px", fontWeight: "800", color: activePlan === "pro" ? "#6C4A79" : "inherit" }}>{moneyFormatter.format(9.00)}</span>
                                 <span style={{ fontSize: "14px", color: "#6D7175" }}>/ month</span>
                             </div>
                         </div>

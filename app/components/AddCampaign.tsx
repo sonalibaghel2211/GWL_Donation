@@ -16,12 +16,18 @@ export type CampaignFormData = {
 type AddCampaignProps = {
   formData: CampaignFormData;
   onFormChange: (data: Partial<CampaignFormData>) => void;
+  currency?: string;
 };
 
 export default function AddCampaign({
   formData,
   onFormChange,
+  currency,
 }: AddCampaignProps) {
+  const moneyFormatter = new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: currency || "USD",
+  });
   const [newAmount, setNewAmount] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const choiceListRef = useRef<any>(null);
@@ -198,7 +204,7 @@ export default function AddCampaign({
                       fontWeight: 600,
                     }}
                   >
-                    <span>${amount}</span>
+                    <span>{moneyFormatter.format(Number(amount))}</span>
                     <button
                       onClick={() => removeDonationAmount(amount)}
                       style={{
@@ -275,7 +281,7 @@ export default function AddCampaign({
       </s-grid-item>
 
       <s-grid-item gridColumn="span 4">
-        <CampaignPreview formData={formData} />
+        <CampaignPreview formData={formData} currency={currency} />
       </s-grid-item>
     </s-grid>
   );

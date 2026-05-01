@@ -2,9 +2,15 @@ import type { CampaignFormData } from "./AddCampaign";
 
 type CampaignPreviewProps = {
   formData: CampaignFormData;
+  currency?: string;
 };
 
-export default function CampaignPreview({ formData }: CampaignPreviewProps) {
+export default function CampaignPreview({ formData, currency }: CampaignPreviewProps) {
+  const moneyFormatter = new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: currency || "USD",
+  });
+
   const renderDonationOptions = () => {
     const amounts = formData.donationAmounts;
 
@@ -17,7 +23,7 @@ export default function CampaignPreview({ formData }: CampaignPreviewProps) {
                 key={amount}
                 className={`preview-tab ${index === 0 ? "active" : ""}`}
               >
-                ${amount}
+                {moneyFormatter.format(Number(amount))}
               </button>
             ))}
             {formData.allowOtherAmount && (
@@ -34,7 +40,7 @@ export default function CampaignPreview({ formData }: CampaignPreviewProps) {
             <option value="">Select amount</option>
             {amounts.map((amount) => (
               <option key={amount} value={amount}>
-                ${amount}
+                {moneyFormatter.format(Number(amount))}
               </option>
             ))}
             {formData.allowOtherAmount && (
@@ -49,7 +55,7 @@ export default function CampaignPreview({ formData }: CampaignPreviewProps) {
             {amounts.map((amount) => (
               <label key={amount} className="preview-radio-label">
                 <input type="radio" name="donation" value={amount} />
-                <span>${amount}</span>
+                <span>{moneyFormatter.format(Number(amount))}</span>
               </label>
             ))}
             {formData.allowOtherAmount && (
@@ -66,7 +72,7 @@ export default function CampaignPreview({ formData }: CampaignPreviewProps) {
           <div className="preview-price-bar">
             {amounts.map((amount) => (
               <button key={amount} className="preview-price-btn">
-                ${amount}
+                {moneyFormatter.format(Number(amount))}
               </button>
             ))}
             {formData.allowOtherAmount && (

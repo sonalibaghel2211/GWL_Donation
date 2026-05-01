@@ -1,5 +1,5 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
-import { useNavigate, data, useFetcher } from "react-router";
+import { useNavigate, data, useFetcher, useLoaderData } from "react-router";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 import { setupSellingPlans } from "../models/recurring.server";
@@ -153,8 +153,17 @@ const initialFormData: CampaignFormData = {
 };
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await authenticate.admin(request);
-  return null;
+  const { admin } = await authenticate.admin(request);
+  const response = await admin.graphql(`
+      query {
+          shop {
+              currencyCode
+          }
+      }
+  `);
+  const shopData = await response.json();
+  const currency = shopData.data?.shop?.currencyCode || "USD";
+  return { currency };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -188,6 +197,20 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       );
     }
 
+    const response = await admin.graphql(`
+        query {
+            shop {
+                currencyCode
+            }
+        }
+    `);
+    const shopData = await response.json();
+    const currency = shopData.data?.shop?.currencyCode || "USD";
+    const moneyFormatter = new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency: currency,
+    });
+
     console.log("Step 3: Processing donation amounts...");
     let parsedAmounts: string[] = [];
     try {
@@ -201,7 +224,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     parsedAmounts = parsedAmounts.filter((amount) => {
       const val = parseFloat(amount);
       if (isNaN(val)) return false;
-      const formatted = `$${val.toFixed(2)}`;
+      const formatted = moneyFormatter.format(val);
       if (formattedSet.has(formatted)) return false;
       formattedSet.add(formatted);
       return true;
@@ -357,7 +380,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       optionValues: [
         {
           optionName: "Title",
-          name: `$${parseFloat(amount).toFixed(2)}`,
+          name: moneyFormatter.format(parseFloat(amount)),
         },
       ],
     }));
@@ -535,6 +558,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function AddCampaignPage() {
+  const { currency } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const fetcher = useFetcher<{ success?: boolean; error?: string }>();
   const [formData, setFormData] = useState<CampaignFormData>(initialFormData);
@@ -642,7 +666,7 @@ export default function AddCampaignPage() {
       )}
 
       <div style={{ marginTop: '24px' }}>
-        <AddCampaign formData={formData} onFormChange={handleFormChange} />
+        <AddCampaign formData={formData} onFormChange={handleFormChange} currency={currency} />
       </div>
     </s-page>
   );
