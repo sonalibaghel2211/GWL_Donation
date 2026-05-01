@@ -20,6 +20,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         where: { shop },
         orderBy: { createdAt: "desc" },
     });
+    const roundupLogs = await prisma.roundUpDonationLog.findMany({
+        where: { shop },
+        orderBy: { createdAt: "desc" },
+    });
 
     const presetDonations = await prisma.donation.findMany({
         where: {
@@ -56,6 +60,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return {
         logs,
         recurringLogs,
+        roundupLogs,
         presetDonations,
         config,
         currency,
@@ -68,7 +73,7 @@ export default function DonationActivity() {
     const resendFetcher = useFetcher();
     const shopify = useAppBridge();
 
-    const { logs, recurringLogs, presetDonations, config, currency: currencyCode, plan } = loaderData;
+    const { logs, recurringLogs, roundupLogs, presetDonations, config, currency: currencyCode, plan } = loaderData;
 
     const moneyFormatter = new Intl.NumberFormat(undefined, {
         style: 'currency',
@@ -104,8 +109,13 @@ export default function DonationActivity() {
     const normalizedLogs = [
         ...logs.map((l: any) => ({
             ...l,
-            visualType: l.type === "roundup" ? "Round Up" : "POS",
-            source: l.type || "pos"
+            visualType: "POS",
+            source: "pos"
+        })),
+        ...roundupLogs.map((l: any) => ({
+            ...l,
+            visualType: "Round Up",
+            source: "roundup"
         })),
         ...recurringLogs.map((l: any) => ({
             ...l,
@@ -117,10 +127,10 @@ export default function DonationActivity() {
             createdAt: d.createdAt,
             orderNumber: d.orderNumber || (d.orderId ? `#${d.orderId.split("-").pop()}` : "Preset"),
             donationAmount: d.amount,
-            orderTotal: 0, // We don't have order total in Donation model currently
+            orderTotal: 0,
             currency: d.currency,
             status: "active",
-            receiptStatus: "sent", // Assuming it was sent during webhook
+            receiptStatus: "sent",
             visualType: "Preset",
             source: "preset"
         }))

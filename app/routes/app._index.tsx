@@ -22,9 +22,25 @@ import prisma from "../db.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
 
-  const { session } = await authenticate.admin(request);
+  const { session, admin } = await authenticate.admin(request);
 
   const shop = session.shop;
+
+  // Fetch shop currency
+  let currencyCode = "USD";
+  try {
+    const currencyResponse = await admin.graphql(`
+      query {
+        shop {
+          currencyCode
+        }
+      }
+    `);
+    const currencyData = await currencyResponse.json();
+    currencyCode = currencyData.data?.shop?.currencyCode || "USD";
+  } catch (e) {
+    console.error("Error fetching shop currency:", e);
+  }
 
   // Force register webhooks on dashboard load to ensure topics are synced
 
@@ -71,31 +87,24 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     prisma.campaign.count({ where: { shop, enabled: true } })
   ]);
 
-  try {
-    const fs = await import('fs');
-    fs.writeFileSync('/tmp/dashboard_debug.json', JSON.stringify({
-      shop,
-      posLogsCount: posLogs.length,
-      recurringLogsCount: recurringLogs.length,
-      samplePosLog: posLogs[0],
-      presetStats
-    }, null, 2));
-  } catch (e) { }
+  // Fetch roundup stats from dedicated table
+  const roundupLogs = await prisma.roundUpDonationLog.findMany({ where: { shop } });
 
-  // Aggregate POS and Round-Up in JS
+  // Aggregate POS stats (only POS entries now, roundup is separate)
   const allPosLogs = posLogs as any[];
-  const posStats = allPosLogs.filter(l => l.type === 'pos');
-  const roundupStats = allPosLogs.filter(l => l.type === 'roundup');
 
-  const totalPos = posStats.reduce((acc, l) => acc + (l.donationAmount || 0), 0);
-  const totalRoundup = roundupStats.reduce((acc, l) => acc + (l.donationAmount || 0), 0);
-  const posOrderCountInt = posStats.length;
+  const totalPos = allPosLogs.reduce((acc, l) => acc + (l.donationAmount || 0), 0);
+  const posOrderCountInt = allPosLogs.length;
 
-  const last7DaysPos = posStats
+  const last7DaysPos = allPosLogs
     .filter(l => new Date(l.createdAt) >= last7DaysDate)
     .reduce((acc, l) => acc + (l.donationAmount || 0), 0);
 
-  const last7DaysRoundup = roundupStats
+  // Roundup stats from dedicated table
+  const allRoundupLogs = roundupLogs as any[];
+  const totalRoundup = allRoundupLogs.reduce((acc, l) => acc + (l.donationAmount || 0), 0);
+
+  const last7DaysRoundup = allRoundupLogs
     .filter(l => new Date(l.createdAt) >= last7DaysDate)
     .reduce((acc, l) => acc + (l.donationAmount || 0), 0);
 
@@ -121,6 +130,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   return {
     enabled: appSettings?.enabled ?? true,
     shop: session.shop,
+    currency: currencyCode,
     stats: {
       totalImpact: totalImpact.toFixed(2),
       totalLast7Days: totalLast7Days.toFixed(2),
@@ -232,6 +242,12 @@ export default function Index() {
 
   const navigate = useNavigate();
 
+  const currencyCode = loaderData?.currency || "USD";
+  const moneyFormatter = new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: currencyCode,
+  });
+
   const [enabled, setEnabled] = useState(loaderData?.enabled ?? true);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [rating, setRating] = useState(5);
@@ -335,7 +351,7 @@ export default function Index() {
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
             <s-stack gap="small">
               <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '16px', fontWeight: 500 }}>Total Donation Amount</div>
-              <div style={{ fontSize: '48px', fontWeight: 800, color: 'white' }}>$ {loaderData.stats.totalImpact}</div>
+              <div style={{ fontSize: '48px', fontWeight: 800, color: 'white' }}>{moneyFormatter.format(parseFloat(loaderData.stats.totalImpact))}</div>
             </s-stack>
           </div>
         </div>
@@ -351,8 +367,7 @@ export default function Index() {
                 <s-text type="strong">Preset Donation</s-text>
                 <div style={{ background: '#F9FAFB', padding: '32px 24px', borderRadius: '8px', textAlign: 'center' }}>
                   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'baseline', gap: '6px' }}>
-                    <span style={{ fontSize: '24px', fontWeight: 600, color: '#637381' }}>$</span>
-                    <span style={{ fontSize: '32px', fontWeight: 700, color: '#1A1C23' }}>{loaderData.stats.preset.total}</span>
+                    <span style={{ fontSize: '32px', fontWeight: 700, color: '#1A1C23' }}>{moneyFormatter.format(parseFloat(loaderData.stats.preset.total))}</span>
                   </div>
                 </div>
                 <s-button full-width variant="secondary" onClick={() => navigate("/app/preset-donation")}>View details</s-button>
@@ -367,8 +382,7 @@ export default function Index() {
                 <s-text type="strong">Portion of Sale</s-text>
                 <div style={{ background: '#F9FAFB', padding: '32px 24px', borderRadius: '8px', textAlign: 'center' }}>
                   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'baseline', gap: '6px' }}>
-                    <span style={{ fontSize: '24px', fontWeight: 600, color: '#637381' }}>$</span>
-                    <span style={{ fontSize: '32px', fontWeight: 700, color: '#1A1C23' }}>{loaderData.stats.pos.total}</span>
+                    <span style={{ fontSize: '32px', fontWeight: 700, color: '#1A1C23' }}>{moneyFormatter.format(parseFloat(loaderData.stats.pos.total))}</span>
                   </div>
                 </div>
                 <s-button full-width variant="secondary" onClick={() => navigate("/app/pos-donation")}>View details</s-button>
@@ -383,8 +397,7 @@ export default function Index() {
                 <s-text type="strong">Round-Up Donation</s-text>
                 <div style={{ background: '#F9FAFB', padding: '32px 24px', borderRadius: '8px', textAlign: 'center' }}>
                   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'baseline', gap: '6px' }}>
-                    <span style={{ fontSize: '24px', fontWeight: 600, color: '#637381' }}>$</span>
-                    <span style={{ fontSize: '32px', fontWeight: 700, color: '#1A1C23' }}>{loaderData.stats.roundup.total}</span>
+                    <span style={{ fontSize: '32px', fontWeight: 700, color: '#1A1C23' }}>{moneyFormatter.format(parseFloat(loaderData.stats.roundup.total))}</span>
                   </div>
                 </div>
                 <s-button full-width variant="secondary" onClick={() => navigate("/app/roundup")}>View details</s-button>
@@ -399,8 +412,7 @@ export default function Index() {
                 <s-text type="strong">Recurring Donation</s-text>
                 <div style={{ background: '#F9FAFB', padding: '32px 24px', borderRadius: '8px', textAlign: 'center' }}>
                   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'baseline', gap: '6px' }}>
-                    <span style={{ fontSize: '24px', fontWeight: 600, color: '#637381' }}>$</span>
-                    <span style={{ fontSize: '32px', fontWeight: 700, color: '#1A1C23' }}>{loaderData.stats.recurring?.total || "0.00"}</span>
+                    <span style={{ fontSize: '32px', fontWeight: 700, color: '#1A1C23' }}>{moneyFormatter.format(parseFloat(loaderData.stats.recurring?.total || "0"))}</span>
                   </div>
                 </div>
                 <s-button full-width variant="secondary" onClick={() => navigate("/app/recurring-subscriptions")}>View details</s-button>

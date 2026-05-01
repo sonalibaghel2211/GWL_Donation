@@ -4,7 +4,7 @@ import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 import { setupSellingPlans } from "../models/recurring.server";
 import AddCampaign, { type CampaignFormData } from "../components/AddCampaign";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper: replace all media on a Shopify product with a new base64 image.
@@ -636,12 +636,16 @@ export default function EditCampaignPage() {
   const fetcher = useFetcher();
   const { initialFormData } = useLoaderData<typeof loader>();
   const [formData, setFormData] = useState<CampaignFormData>(initialFormData);
-  const [isDirty, setIsDirty] = useState(false);
+  
+  // Compute isDirty by comparing current formData with initialFormData
+  const isDirty = useMemo(() => {
+    return JSON.stringify(formData) !== JSON.stringify(initialFormData);
+  }, [formData, initialFormData]);
+
   const isSubmitting = fetcher.state === "submitting";
 
   const handleFormChange = (changes: Partial<CampaignFormData>) => {
     setFormData((prev) => ({ ...prev, ...changes }));
-    setIsDirty(true);
   };
 
   const handleSave = () => {
@@ -670,7 +674,6 @@ export default function EditCampaignPage() {
 
   useEffect(() => {
     if (fetcher.state === "idle" && fetcher.data?.success) {
-      setIsDirty(false);
       navigate("/app/preset-donation");
     }
   }, [fetcher.state, fetcher.data, navigate]);

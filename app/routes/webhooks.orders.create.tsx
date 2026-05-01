@@ -88,6 +88,17 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                     });
 
                     if (isDonation && matchingCampaign) {
+                        // ── Fix: Skip recurring items here — they are handled by
+                        //    the STAGING LOGIC below and written to RecurringDonationLog.
+                        const hasSellingPlan = !!(item.selling_plan_allocation);
+                        const hasSellingPlanProp = (item.properties || []).some(
+                            (p: any) => ["selling_plan", "_selling_plan_id"].includes(p.name)
+                        );
+                        if (hasSellingPlan || hasSellingPlanProp) {
+                            console.log(`[Webhook] Skipping Donation table for recurring item (variant ${variantIdStr}) — will be handled by STAGING LOGIC.`);
+                            continue;
+                        }
+
                         const basePrice = parseFloat(item.price || "0") * (item.quantity || 1);
                         const lineDiscount = parseFloat(item.total_discount || "0");
                         const donationAmount = Math.max(0, basePrice - lineDiscount);
@@ -470,12 +481,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                             type: "recurring",
                         },
                     });
-                } else {
-                    const logType = hasRoundUpDonation ? "roundup" : "pos";
-                    await db.posDonationLog.upsert({
+                } else if (hasRoundUpDonation) {
+                    // ── Fix: Roundup donations go to their own dedicated table ──
+                    await db.roundUpDonationLog.upsert({
                         where: { orderId: orderIdStr },
                         update: {
-                            type: logType,
+                            type: "roundup",
                         },
                         create: {
                             shop,
@@ -488,7 +499,28 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                             receiptStatus: emailStatus,
                             receiptSentAt: sentDate,
                             isResent: false,
-                            type: logType,
+                            type: "roundup",
+                        },
+                    });
+                } else {
+                    // POS donations only
+                    await db.posDonationLog.upsert({
+                        where: { orderId: orderIdStr },
+                        update: {
+                            type: "pos",
+                        },
+                        create: {
+                            shop,
+                            orderId: orderIdStr,
+                            orderNumber: order.name,
+                            donationAmount: parseFloat(donationAmtFormatted),
+                            orderTotal: parseFloat(order.total_price || 0),
+                            currency: order.currency || "USD",
+                            status: "active",
+                            receiptStatus: emailStatus,
+                            receiptSentAt: sentDate,
+                            isResent: false,
+                            type: "pos",
                         },
                     });
                 }

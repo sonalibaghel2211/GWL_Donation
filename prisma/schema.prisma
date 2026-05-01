@@ -207,6 +207,22 @@ model RoundUpDonationSettings {
   updatedAt                 DateTime @updatedAt
 }
 
+model RoundUpDonationLog {
+  id             String    @id @default(uuid())
+  shop           String
+  orderId        String    @unique
+  orderNumber    String?
+  donationAmount Float
+  orderTotal     Float
+  currency       String    @default("USD")
+  status         String    @default("active")
+  receiptStatus  String    @default("pending")
+  receiptSentAt  DateTime?
+  isResent       Boolean   @default(false)
+  type           String    @default("roundup")
+  createdAt      DateTime  @default(now())
+}
+
 model subscription {
   id              String   @id @default(cuid())
   shop            String

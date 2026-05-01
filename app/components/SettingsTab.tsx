@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useSubmit, Link } from "react-router";
 
-export default function SettingsTab({ initialSettings, shop }: { initialSettings: any, shop: string }) {
+export default function SettingsTab({ initialSettings, shop, onDirtyChange }: { initialSettings: any, shop: string, onDirtyChange?: (dirty: boolean) => void }) {
   const submit = useSubmit();
 
   const [generalSettings, setGeneralSettings] = useState({
@@ -11,6 +11,23 @@ export default function SettingsTab({ initialSettings, shop }: { initialSettings
     displayThankYou: initialSettings?.displayThankYou ?? true,
     thankYouMessage: initialSettings?.thankYouMessage ?? "Thanks for Donating!!!!!!!",
   });
+
+  // Snapshot of original settings for dirty-state detection
+  const [savedSnapshot] = useState(() => ({
+    widgetTitle: initialSettings?.widgetTitle ?? "Donation",
+    buttonText: initialSettings?.buttonText ?? "Donate",
+    additionalCss: initialSettings?.additionalCss ?? "",
+    displayThankYou: initialSettings?.displayThankYou ?? true,
+    thankYouMessage: initialSettings?.thankYouMessage ?? "Thanks for Donating!!!!!!!",
+  }));
+
+  const hasChanges = Object.keys(generalSettings).some(
+    (key) => (generalSettings as any)[key] !== (savedSnapshot as any)[key]
+  );
+
+  useEffect(() => {
+    onDirtyChange?.(hasChanges);
+  }, [hasChanges, onDirtyChange]);
 
 
   const handleSaveSubmit = (e: any) => {

@@ -203,6 +203,13 @@ export default function EmailSettingsPage() {
         resumeBody: savedSettings.resumeBody || DEFAULT_SETTINGS.resumeBody,
     });
 
+    // Snapshot of initial settings for dirty-state detection
+    const [initialSettings] = useState<EmailSettings>(() => ({ ...settings }));
+
+    const hasChanges = Object.keys(settings).some(
+        (key) => settings[key as keyof EmailSettings] !== initialSettings[key as keyof EmailSettings]
+    );
+
     const [selectedTab, setSelectedTab] = useState("receipt");
 
     const isSaving =
@@ -235,9 +242,10 @@ export default function EmailSettingsPage() {
                 slot="primary-action"
                 variant="primary"
                 onClick={handleSave}
+                disabled={isSaving || !hasChanges}
                 {...(isSaving ? { loading: true } : {})}
             >
-                Save
+                {isSaving ? "Saving..." : (hasChanges ? "Save" : "No Changes")}
             </s-button>
 
             <div style={{ display: "flex", gap: "24px", marginTop: "16px" }}>

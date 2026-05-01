@@ -7,6 +7,7 @@ import {
   data,
   useFetcher,
 } from "react-router";
+import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 import CampaignList from "../components/CampaignList";
@@ -146,12 +147,23 @@ const tabs = [
 export default function PresetDonation() {
   const navigate = useNavigate();
   const fetcher = useFetcher();
+  const shopify = useAppBridge();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTabParam = searchParams.get("tab");
   const [activeTab, setActiveTab] = useState(
     initialTabParam === "configuration" ? "config" :
       (initialTabParam === "settings" ? "settings" : "campaign")
   );
+  
+  const isSubmitting = fetcher.state === "submitting" && fetcher.formMethod === "POST";
+  const [isSettingsDirty, setIsSettingsDirty] = useState(false);
+
+  useEffect(() => {
+    if (fetcher.data?.status === "success") {
+      shopify.toast.show("Settings saved successfully");
+      setIsSettingsDirty(false);
+    }
+  }, [fetcher.data, shopify]);
 
   useEffect(() => {
     const tab = searchParams.get("tab");
@@ -187,13 +199,14 @@ export default function PresetDonation() {
         <s-button
           slot="primary-action"
           variant="primary"
+          disabled={!isSettingsDirty || isSubmitting}
           onClick={() => {
             const form = document.getElementById("settings-form");
             if (form) form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
-            shopify.toast.show("Settings saved successfully");
           }}
+          {...(isSubmitting ? { loading: true } : {})}
         >
-          Save Settings
+          {isSubmitting ? "Saving..." : (isSettingsDirty ? "Save Settings" : "No Changes")}
         </s-button>
       )}
 
@@ -216,7 +229,7 @@ export default function PresetDonation() {
       <div className="polaris-tab-panel">
         {activeTab === "settings" && (
           <s-section>
-            <SettingsTab initialSettings={appSettings} shop={shop} />
+            <SettingsTab initialSettings={appSettings} shop={shop} onDirtyChange={setIsSettingsDirty} />
           </s-section>
         )}
 
