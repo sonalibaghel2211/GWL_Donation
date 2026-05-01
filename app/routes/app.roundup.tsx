@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Tabs, BlockStack, InlineStack, Box, Text, Button, Card, Link } from "@shopify/polaris";
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
 import { useLoaderData, Form } from "react-router";
@@ -7,7 +7,7 @@ import prisma from "../db.server";
 import { useLocation } from "react-router";
 import ConfigurationTab, { CART_PREVIEW_SVG } from "../components/ConfigurationTab";
 export async function loader({ request }: LoaderFunctionArgs) {
-    const { session } = await authenticate.admin(request);
+    const { session, admin } = await authenticate.admin(request);
     let settings = await prisma.roundUpDonationSettings.findUnique({
         where: { shop: session.shop },
     });
@@ -56,8 +56,17 @@ export async function loader({ request }: LoaderFunctionArgs) {
             console.warn("Error fetching live image from Shopify", error);
         }
     }
+    const currencyResponse = await admin.graphql(`
+        query {
+            shop {
+                currencyCode
+            }
+        }
+    `);
+    const currencyData = await currencyResponse.json();
+    const currency = currencyData.data?.shop?.currencyCode || "USD";
 
-    return { settings };
+    return { settings, currency };
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -587,7 +596,11 @@ export async function action({ request }: ActionFunctionArgs) {
 
 export default function RoundUpDonationPage() {
 
-    const { settings } = useLoaderData<typeof loader>();
+    const { settings, currency } = useLoaderData<typeof loader>();
+    const moneyFormatter = new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency: currency || "USD",
+    });
 
     //  TABS STATE
     const [selectedTabIndex, setSelectedTabIndex] = useState(0);
@@ -642,6 +655,26 @@ export default function RoundUpDonationPage() {
     const [imageUrlPreview, setImageUrlPreview] = useState(settings?.imageUrl || "https://cdn-icons-png.flaticon.com/512/3772/3772231.png");
     const [donationOrderTag, setDonationOrderTag] = useState(settings?.donationOrderTag || "");
 
+    const hasChanges = useMemo(() => {
+        return enabled !== (settings?.enabled ?? false) ||
+            showImage !== (settings?.showImage ?? false) ||
+            additionalDonationEnabled !== (settings?.additionalDonationEnabled ?? false) ||
+            campaignTitlePreview !== (settings?.campaignTitle || "Support Our Cause") ||
+            descriptionPreview !== (settings?.description || "Round up your order and donate {amount} to support our cause. Every small contribution makes a difference.") ||
+            checkboxLabelPreview !== (settings?.checkboxLabel || "Yes, I want to donate {amount}") ||
+            roundingMode !== (settings?.rounding || "nearest1") ||
+            additionalDonationTitlePreview !== (settings?.additionalDonationTitle || "Add an extra donation (optional)") ||
+            placeholderTextPreview !== (settings?.placeholderText || "Enter amount") ||
+            buttonTextPreview !== (settings?.buttonText || "Donate") ||
+            imageUrlPreview !== (settings?.imageUrl || "https://cdn-icons-png.flaticon.com/512/3772/3772231.png") ||
+            donationOrderTag !== (settings?.donationOrderTag || "");
+    }, [
+        enabled, showImage, additionalDonationEnabled, campaignTitlePreview,
+        descriptionPreview, checkboxLabelPreview, roundingMode,
+        additionalDonationTitlePreview, placeholderTextPreview, buttonTextPreview,
+        imageUrlPreview, donationOrderTag, settings
+    ]);
+
     const choiceListRef = useRef<any>(null);
     const location = useLocation();
     useEffect(() => {
@@ -671,16 +704,17 @@ export default function RoundUpDonationPage() {
     }, []);
 
 
-    // 🔹 IMPROVED CALCULATION LOGIC (from user snippet)
-    const cartTotal = 99.39;
-    let displayPrice = "$0.00";
+    // 🔹 IMPROVED CALCULATION LOGIC
+    let displayPrice = moneyFormatter.format(0);
     if (roundingMode === "custom") {
-        displayPrice = customAmount ? `$${Number(customAmount).toFixed(2)}` : "$0.00";
+        displayPrice = customAmount ? moneyFormatter.format(Number(customAmount)) : moneyFormatter.format(0);
     } else {
-        let rounded = Math.ceil(cartTotal);
+        const cartTotal = 99.39; // Sample cart total
+        let rounded = cartTotal;
+        if (roundingMode === "nearest1") rounded = Math.ceil(cartTotal);
         if (roundingMode === "nearest5") rounded = Math.ceil(cartTotal / 5) * 5;
         if (roundingMode === "nearest10") rounded = Math.ceil(cartTotal / 10) * 10;
-        displayPrice = `$${(rounded - cartTotal).toFixed(2)}`;
+        displayPrice = moneyFormatter.format(rounded - cartTotal);
     }
 
     const replaceAmount = (text: string, amount: string) => {
@@ -773,6 +807,24 @@ export default function RoundUpDonationPage() {
             `}</style>
 
 
+            {/* Explicit Save Header */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+                {selectedTabIndex === 0 && (
+                    <s-button
+                        slot="primary-action"
+                        variant="primary"
+                        disabled={!hasChanges}
+                        onClick={() => {
+                            const form = document.getElementById("roundup-form") as HTMLFormElement;
+                            if (form) form.requestSubmit();
+                        }}
+                    >
+                        {hasChanges ? "Save Settings" : "No Changes"}
+                    </s-button>
+                )}
+            </div>
+
+
 
 
             {/* ================= TAB 1: SETTINGS ================= */}
@@ -800,8 +852,8 @@ export default function RoundUpDonationPage() {
                         </s-banner>
                     </div>
 
-                    {/*  SAVE BAR ENABLE */}
-                    <Form method="post" data-save-bar>
+                    {/*  MANUAL FORM */}
+                    <Form method="post" id="roundup-form">
                         {/*  HIDDEN INPUTS (CRITICAL FOR FUNCTIONALITY) */}
                         <input type="checkbox" name="enabled" id="enabled-checkbox" value="true" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} style={{ display: 'none' }} />
                         <input type="checkbox" name="showImage" id="showImage-checkbox" value="true" checked={showImage} onChange={(e) => setShowImage(e.target.checked)} style={{ display: 'none' }} />
@@ -844,7 +896,7 @@ export default function RoundUpDonationPage() {
                                                 <span style={{ fontSize: '13px' }}>{enabled ? "The widget is currently active and visible to your customers at checkout." : "Activate the widget to start collecting round-up donations."}</span>
                                             </s-text>
                                         </s-stack>
-                                        <s-button type="button" variant={enabled ? "secondary" : "primary"} onClick={handleToggle}>
+                                        <s-button type="button" variant={enabled ? "secondary" : "primary"} onClick={() => setEnabled(!enabled)}>
                                             {enabled ? "Deactivate Widget" : "Activate Widget"}
                                         </s-button>
                                     </s-stack>
@@ -1001,17 +1053,18 @@ export default function RoundUpDonationPage() {
                                                     if (val) setRoundingMode(String(val));
                                                 }}
                                             >
-                                                <s-choice value="nearest1" selected={roundingMode === 'nearest1'}>Round to nearest $1.00</s-choice>
-                                                <s-choice value="nearest5" selected={roundingMode === 'nearest5'}>Round to nearest $5.00</s-choice>
-                                                <s-choice value="nearest10" selected={roundingMode === 'nearest10'}>Round to nearest $10.00</s-choice>
-                                                <s-choice value="custom" selected={roundingMode === 'custom'}>Fixed custom amount</s-choice>
+                                                <s-choice value="nearest1" selected={roundingMode === 'nearest1'}>Round to nearest {moneyFormatter.format(1)}</s-choice>
+                                                <s-choice value="nearest5" selected={roundingMode === 'nearest5'}>Round to nearest {moneyFormatter.format(5)}</s-choice>
+                                                <s-choice value="nearest10" selected={roundingMode === 'nearest10'}>Round to nearest {moneyFormatter.format(10)}</s-choice>
+                                                <s-choice value="custom" selected={roundingMode === 'custom'}>Fixed Amount</s-choice>
                                             </s-choice-list>
 
                                             {roundingMode === "custom" && (
                                                 <s-box paddingBlockStart="small">
                                                     <s-text-field
+                                                        type="number"
                                                         name="customAmount"
-                                                        label="Donation Amount ($)"
+                                                        label={`Donation Amount (${currency})`}
                                                         value={customAmount}
                                                         onInput={(e: any) =>
                                                             setCustomAmount(e.target.value || e.detail?.value || "")
@@ -1024,7 +1077,7 @@ export default function RoundUpDonationPage() {
 
                                         <div style={{ padding: '12px', background: '#f4f6f8', borderRadius: '6px', borderLeft: '3px solid #6C4A79' }}>
                                             <s-text color="subdued" size="small">
-                                                Tip: Most merchants choose "Nearest $1" for the best conversion rate.
+                                                Tip: Most merchants choose "Nearest {moneyFormatter.format(1)}" for the best conversion rate.
                                             </s-text>
                                         </div>
 
@@ -1182,7 +1235,7 @@ export default function RoundUpDonationPage() {
                                         <s-stack direction="inline" gap="small" alignItems="start">
                                             <svg viewBox="0 0 20 20" style={{ width: '16px', height: '16px', fill: '#637381', marginTop: '2px' }}><path d="M10 2a8 8 0 1 0 8 8 8.009 8.009 0 0 0-8-8Zm0 14a6 6 0 1 1 6-6 6.007 6.007 0 0 1-6 6Zm-1-5h2v2H9v-2Zm0-6h2v4H9V5Z" /></svg>
                                             <s-text color="subdued">
-                                                <span style={{ fontSize: '13px' }}>The preview reflects the calculations based on a sample cart total of <strong>$99.39</strong>.</span>
+                                                <span style={{ fontSize: '13px' }}>The preview reflects the calculations based on a sample cart total of <strong>{moneyFormatter.format(99.39)}</strong>.</span>
                                             </s-text>
                                         </s-stack>
                                     </s-box>

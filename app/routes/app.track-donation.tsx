@@ -23,7 +23,7 @@ const MONTHS = [
 ];
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-    const { session } = await authenticate.admin(request);
+    const { session, admin } = await authenticate.admin(request);
     const shop = session.shop;
 
     // Fetch all campaigns for this shop, sorted alphabetically
@@ -81,24 +81,24 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         if (typeFilter === "all" || typeFilter === "pos" || typeFilter === "roundup") {
             const rawLogs = await prisma.posDonationLog.findMany({ where: { shop } });
 
-            const filteredPos = rawLogs.filter(l => {
+            const filteredPos = rawLogs.filter((l: any) => {
                 const dDate = new Date(l.createdAt);
                 if (dDate < startDate || dDate >= endDate) return false;
                 if (typeFilter === "all") return true;
                 return l.type === typeFilter;
             });
 
-            allDonations = [...allDonations, ...filteredPos.map(d => ({ amount: d.donationAmount, createdAt: new Date(d.createdAt) }))];
+            allDonations = [...allDonations, ...filteredPos.map((d: any) => ({ amount: d.donationAmount, createdAt: new Date(d.createdAt) }))];
         }
 
         // Fetch Recurring Donations
         if (typeFilter === "all" || typeFilter === "recurring") {
             const rawRecurring = await prisma.recurringDonationLog.findMany({ where: { shop } });
-            const filteredRecurring = rawRecurring.filter(l => {
+            const filteredRecurring = rawRecurring.filter((l: any) => {
                 const dDate = new Date(l.createdAt);
                 return dDate >= startDate && dDate < endDate;
             });
-            allDonations = [...allDonations, ...filteredRecurring.map(d => ({ amount: d.donationAmount, createdAt: new Date(d.createdAt) }))];
+            allDonations = [...allDonations, ...filteredRecurring.map((d: any) => ({ amount: d.donationAmount, createdAt: new Date(d.createdAt) }))];
         }
 
         chartData = MONTHS.map((month, index) => {
@@ -112,11 +112,26 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         console.error("Error fetching donation filter metrics:", error);
     }
 
-    return data({ campaigns, years, chartData, query: { campaign_name, requestYear, typeFilter } });
+    const currencyResponse = await admin.graphql(`
+        query {
+            shop {
+                currencyCode
+            }
+        }
+    `);
+    const currencyData = await currencyResponse.json();
+    const currency = currencyData.data?.shop?.currencyCode || "USD";
+
+    return data({ campaigns, years, chartData, query: { campaign_name, requestYear, typeFilter }, currency });
 };
 
 export default function TrackDonationPage() {
-    const { campaigns: trackCampaigns, years, chartData, query } = useLoaderData<typeof loader>();
+    const { campaigns: trackCampaigns, years, chartData, query, currency } = useLoaderData<typeof loader>();
+    
+    const moneyFormatter = new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency: currency || "USD",
+    });
     const submit = useSubmit();
     const navigation = useNavigation();
 
@@ -146,7 +161,7 @@ export default function TrackDonationPage() {
                         labels: chartData.map((d) => d.month),
                         datasets: [
                             {
-                                label: "Donation Amount ($)",
+                                label: `Donation Amount (${currency})`,
                                 data: chartData.map((d) => d.amount),
                                 borderColor: "#6C4A79",
                                 backgroundColor: "rgba(108, 74, 121, 0.1)",
@@ -178,7 +193,7 @@ export default function TrackDonationPage() {
                                 cornerRadius: 8,
                                 displayColors: false,
                                 callbacks: {
-                                    label: (context: any) => `$${context.parsed.y.toFixed(2)}`,
+                                    label: (context: any) => moneyFormatter.format(context.parsed.y),
                                 },
                             },
                         },
@@ -192,7 +207,7 @@ export default function TrackDonationPage() {
                                 grid: { color: "#e3e3e3" },
                                 ticks: {
                                     color: "#6d7175",
-                                    callback: (value: any) => `$${value}`,
+                                    callback: (value: any) => moneyFormatter.format(value),
                                 },
                             },
                         },

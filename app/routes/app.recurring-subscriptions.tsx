@@ -183,7 +183,7 @@ export default function RecurringSubscriptionsPage() {
                 <IndexTable.Cell>{fmtDate(createdAt)}</IndexTable.Cell>
                 <IndexTable.Cell>{fmtDate(nextBillingDate)}</IndexTable.Cell>
                 <IndexTable.Cell>
-                    {currency} {totalAmount.toFixed(2)}
+                    {new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(totalAmount)}
                 </IndexTable.Cell>
                 <IndexTable.Cell>{getStatusBadge(status)}</IndexTable.Cell>
                 <IndexTable.Cell>

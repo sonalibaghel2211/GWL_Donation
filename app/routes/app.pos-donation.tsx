@@ -404,7 +404,7 @@ export default function PosDonation() {
                                 opacity: isSaving ? 0.7 : 1
                             }}
                         >
-                            {isSaving ? "Saving..." : "Save"}
+                            {isSaving ? "Saving..." : (hasChanges ? "Save" : "No Changes")}
                         </button>
                         <button
                             onClick={() => handleSettingChange("enabled", !settings.enabled)}
