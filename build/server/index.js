@@ -4800,28 +4800,29 @@ const action$j = async ({
         status: 200
       });
     }
-    const tenSecsAgo = new Date(Date.now() - 10 * 1e3);
-    await prisma.webhookProcessingLock.deleteMany({
-      where: {
-        OR: [{
-          orderId: orderIdStr,
-          createdAt: {
-            lt: tenSecsAgo
-          }
-        }, {
-          orderId,
-          createdAt: {
-            lt: tenSecsAgo
-          }
-        }, {
-          createdAt: {
-            lt: new Date(Date.now() - 30 * 1e3)
-          }
-        }]
-      }
-    }).catch(() => {
-    });
+    let lockAcquired = false;
     try {
+      const tenSecsAgo = new Date(Date.now() - 10 * 1e3);
+      await prisma.webhookProcessingLock.deleteMany({
+        where: {
+          OR: [{
+            orderId: orderIdStr,
+            createdAt: {
+              lt: tenSecsAgo
+            }
+          }, {
+            orderId,
+            createdAt: {
+              lt: tenSecsAgo
+            }
+          }, {
+            createdAt: {
+              lt: new Date(Date.now() - 30 * 1e3)
+            }
+          }]
+        }
+      }).catch(() => {
+      });
       await prisma.webhookProcessingLock.create({
         data: {
           orderId: orderIdStr,
@@ -4829,46 +4830,59 @@ const action$j = async ({
           topic
         }
       });
+      lockAcquired = true;
     } catch (lockError) {
-      const existingLock = await prisma.webhookProcessingLock.findFirst({
-        where: {
-          OR: [{
-            orderId: orderIdStr
-          }, {
-            orderId
-          }]
-        }
-      });
-      if (existingLock && Date.now() - new Date(existingLock.createdAt).getTime() > 5e3) {
-        await prisma.webhookProcessingLock.deleteMany({
-          where: {
-            OR: [{
-              orderId: orderIdStr
-            }, {
-              orderId
-            }]
-          }
-        }).catch(() => {
-        });
-        try {
-          await prisma.webhookProcessingLock.create({
-            data: {
-              orderId: orderIdStr,
-              shop,
-              topic
-            }
-          });
-        } catch {
-          console.log(`[Webhook] Concurrency lock active for order ${order.name || orderIdStr}. Topic: ${topic}. Skipping.`);
-          return new Response("OK - processing in progress", {
-            status: 200
-          });
-        }
+      if ((lockError == null ? void 0 : lockError.code) === "P2021" || String(lockError == null ? void 0 : lockError.message).includes("does not exist")) {
+        console.warn("[Webhook] WebhookProcessingLock table does not exist in DB; proceeding without locking.");
+        lockAcquired = true;
       } else {
-        console.log(`[Webhook] Concurrency lock active for order ${order.name || orderIdStr}. Topic: ${topic}. Skipping.`);
-        return new Response("OK - processing in progress", {
-          status: 200
-        });
+        try {
+          const existingLock = await prisma.webhookProcessingLock.findFirst({
+            where: {
+              OR: [{
+                orderId: orderIdStr
+              }, {
+                orderId
+              }]
+            }
+          }).catch(() => null);
+          if (existingLock && Date.now() - new Date(existingLock.createdAt).getTime() > 5e3) {
+            await prisma.webhookProcessingLock.deleteMany({
+              where: {
+                OR: [{
+                  orderId: orderIdStr
+                }, {
+                  orderId
+                }]
+              }
+            }).catch(() => {
+            });
+            try {
+              await prisma.webhookProcessingLock.create({
+                data: {
+                  orderId: orderIdStr,
+                  shop,
+                  topic
+                }
+              });
+              lockAcquired = true;
+            } catch {
+              console.log(`[Webhook] Concurrency lock active for order ${order.name || orderIdStr}. Topic: ${topic}. Skipping.`);
+              return new Response("OK - processing in progress", {
+                status: 200
+              });
+            }
+          } else if (!existingLock) {
+            lockAcquired = true;
+          } else {
+            console.log(`[Webhook] Concurrency lock active for order ${order.name || orderIdStr}. Topic: ${topic}. Skipping.`);
+            return new Response("OK - processing in progress", {
+              status: 200
+            });
+          }
+        } catch {
+          lockAcquired = true;
+        }
       }
     }
     try {
@@ -5800,16 +5814,18 @@ ${donationNoteLine}` : donationNoteLine;
         }
       }
     } finally {
-      await prisma.webhookProcessingLock.deleteMany({
-        where: {
-          OR: [{
-            orderId: orderIdStr
-          }, {
-            orderId
-          }]
-        }
-      }).catch(() => {
-      });
+      if (lockAcquired) {
+        await prisma.webhookProcessingLock.deleteMany({
+          where: {
+            OR: [{
+              orderId: orderIdStr
+            }, {
+              orderId
+            }]
+          }
+        }).catch(() => {
+        });
+      }
     }
   } catch (err) {
     console.error("Fatal Webhook Error:", err);
