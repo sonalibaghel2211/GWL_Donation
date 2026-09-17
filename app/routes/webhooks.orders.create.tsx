@@ -74,6 +74,18 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             return new Response("OK - no active subscription", { status: 200 });
         }
 
+        // Clean up stale locks (>10s old) or orphaned locks for this order
+        const tenSecsAgo = new Date(Date.now() - 10 * 1000);
+        await db.webhookProcessingLock.deleteMany({
+            where: {
+                OR: [
+                    { orderId: orderIdStr, createdAt: { lt: tenSecsAgo } },
+                    { orderId: orderId, createdAt: { lt: tenSecsAgo } },
+                    { createdAt: { lt: new Date(Date.now() - 30 * 1000) } }
+                ]
+            }
+        }).catch(() => { });
+
         // Acquire concurrency lock
         try {
             await db.webhookProcessingLock.create({
@@ -84,8 +96,26 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                 }
             });
         } catch (lockError) {
-            console.log(`[Webhook] Concurrency lock active for order ${order.name || orderIdStr}. Topic: ${topic}. Skipping.`);
-            return new Response("OK - processing in progress", { status: 200 });
+            // Check if existing lock is stale (>5 seconds old)
+            const existingLock = await db.webhookProcessingLock.findFirst({
+                where: { OR: [{ orderId: orderIdStr }, { orderId: orderId }] }
+            });
+            if (existingLock && (Date.now() - new Date(existingLock.createdAt).getTime() > 5000)) {
+                await db.webhookProcessingLock.deleteMany({
+                    where: { OR: [{ orderId: orderIdStr }, { orderId: orderId }] }
+                }).catch(() => { });
+                try {
+                    await db.webhookProcessingLock.create({
+                        data: { orderId: orderIdStr, shop, topic }
+                    });
+                } catch {
+                    console.log(`[Webhook] Concurrency lock active for order ${order.name || orderIdStr}. Topic: ${topic}. Skipping.`);
+                    return new Response("OK - processing in progress", { status: 200 });
+                }
+            } else {
+                console.log(`[Webhook] Concurrency lock active for order ${order.name || orderIdStr}. Topic: ${topic}. Skipping.`);
+                return new Response("OK - processing in progress", { status: 200 });
+            }
         }
 
         try {
@@ -1060,7 +1090,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                 }
             }
         } finally {
-            await db.webhookProcessingLock.deleteMany({ where: { orderId: orderIdStr } }).catch(() => { });
+            await db.webhookProcessingLock.deleteMany({
+                where: { OR: [{ orderId: orderIdStr }, { orderId: orderId }] }
+            }).catch(() => { });
         }
     } catch (err) {
         console.error("Fatal Webhook Error:", err);
