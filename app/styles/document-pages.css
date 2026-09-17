@@ -1,0 +1,246 @@
+/* ==========================================================================
+   Shared styles for public document pages
+   (Privacy Policy, Documentation, FAQ)
+   ========================================================================== */
+
+.doc-page {
+  --doc-max-width: 860px;
+  --doc-color-bg: #ffffff;
+  --doc-color-text: #1a1a1a;
+  --doc-color-muted: #5b5f66;
+  --doc-color-border: #e5e7eb;
+  --doc-color-accent: #2563eb;
+  --doc-color-surface: #f8f9fb;
+  --doc-radius: 10px;
+
+  min-height: 100vh;
+  background: var(--doc-color-bg);
+  color: var(--doc-color-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  line-height: 1.6;
+}
+
+/* ---------- Header ---------- */
+
+.doc-header {
+  border-bottom: 1px solid var(--doc-color-border);
+  padding: 1.25rem 1.5rem;
+}
+
+.doc-header__inner {
+  max-width: var(--doc-max-width);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.doc-header__brand {
+  font-weight: 700;
+  font-size: 1.05rem;
+  text-decoration: none;
+  color: var(--doc-color-text);
+}
+
+.doc-nav {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.doc-nav a {
+  color: var(--doc-color-muted);
+  text-decoration: none;
+  font-size: 0.95rem;
+  padding: 0.25rem 0;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.doc-nav a:hover,
+.doc-nav a[aria-current="page"] {
+  color: var(--doc-color-accent);
+  border-bottom-color: var(--doc-color-accent);
+}
+
+/* ---------- Main content ---------- */
+
+.doc-main {
+  max-width: var(--doc-max-width);
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 4rem;
+}
+
+.doc-title {
+  font-size: clamp(1.75rem, 4vw, 2.4rem);
+  font-weight: 800;
+  margin: 0 0 0.5rem;
+  letter-spacing: -0.02em;
+}
+
+.doc-updated {
+  color: var(--doc-color-muted);
+  font-size: 0.9rem;
+  margin: 0 0 2rem;
+}
+
+.doc-section {
+  margin: 2.25rem 0;
+}
+
+.doc-section h2 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 0 0 0.75rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--doc-color-border);
+}
+
+.doc-section h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 1.25rem 0 0.5rem;
+}
+
+.doc-section p {
+  margin: 0 0 1rem;
+}
+
+.doc-section ul,
+.doc-section ol {
+  margin: 0 0 1rem;
+  padding-left: 1.4rem;
+}
+
+.doc-section li {
+  margin-bottom: 0.4rem;
+}
+
+.doc-section a {
+  color: var(--doc-color-accent);
+}
+
+.doc-callout {
+  background: var(--doc-color-surface);
+  border: 1px solid var(--doc-color-border);
+  border-radius: var(--doc-radius);
+  padding: 1rem 1.25rem;
+  margin: 1rem 0;
+  font-size: 0.95rem;
+}
+
+/* ---------- Tables ---------- */
+
+.doc-table-wrap {
+  overflow-x: auto;
+  margin: 1rem 0 1.5rem;
+  border: 1px solid var(--doc-color-border);
+  border-radius: var(--doc-radius);
+}
+
+.doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+  min-width: 480px;
+}
+
+.doc-table caption {
+  text-align: left;
+  padding: 0.75rem 1rem 0;
+  font-weight: 600;
+  color: var(--doc-color-muted);
+}
+
+.doc-table th,
+.doc-table td {
+  text-align: left;
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid var(--doc-color-border);
+  vertical-align: top;
+}
+
+.doc-table thead th {
+  background: var(--doc-color-surface);
+  font-weight: 700;
+}
+
+.doc-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ---------- FAQ ---------- */
+
+.doc-faq-item {
+  border: 1px solid var(--doc-color-border);
+  border-radius: var(--doc-radius);
+  margin-bottom: 0.85rem;
+  overflow: hidden;
+  background: var(--doc-color-surface);
+}
+
+.doc-faq-item summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 1rem 1.25rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.doc-faq-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.doc-faq-item summary::after {
+  content: "+";
+  font-size: 1.3rem;
+  color: var(--doc-color-accent);
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.doc-faq-item[open] summary::after {
+  transform: rotate(45deg);
+}
+
+.doc-faq-item__body {
+  padding: 0 1.25rem 1.1rem;
+  background: var(--doc-color-bg);
+}
+
+.doc-faq-item__body p,
+.doc-faq-item__body ul {
+  margin: 0.5rem 0 0;
+}
+
+/* ---------- Footer ---------- */
+
+.doc-footer {
+  border-top: 1px solid var(--doc-color-border);
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--doc-color-muted);
+  font-size: 0.85rem;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 600px) {
+  .doc-header {
+    padding: 1rem;
+  }
+
+  .doc-main {
+    padding: 1.75rem 1rem 3rem;
+  }
+
+  .doc-table {
+    min-width: 420px;
+  }
+}

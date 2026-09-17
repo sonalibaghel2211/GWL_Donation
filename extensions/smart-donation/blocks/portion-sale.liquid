@@ -1,0 +1,501 @@
+{% assign settings = app.metafields.pos_donation.settings.value %}
+{% assign is_enabled = settings.enabled | default: false %}
+
+{% assign min_val = settings.minimumValue | default: 0 %}
+{% if settings.donationType == "percentage" %}
+  {% assign min_val = 0 %}
+{% endif %}
+{% assign min_val_cents = min_val | times: 100 %}
+
+{% assign calculated_donation_cents = 0 %}
+{% assign total_applicable_value_cents = 0 %}
+{% assign is_applicable = false %}
+
+{% assign basis_down = settings.donationBasis | downcase %}
+{% if basis_down == 'product' %}
+  {% if request.page_type == 'product' %}
+    {% assign item_price = product.selected_or_first_available_variant.price | default: 0 %}
+    {% if item_price >= min_val_cents %}
+      {% assign is_applicable = true %}
+      {% assign total_applicable_value_cents = item_price %}
+      {% if settings.donationType == "percentage" %}
+        {% assign pct = settings.donationValue | divided_by: 100.0 %}
+        {% assign calculated_donation_cents = item_price | times: pct %}
+      {% else %}
+        {% assign calculated_donation_cents = settings.donationValue | times: 100 %}
+      {% endif %}
+    {% endif %}
+  {% endif %}
+
+  {% comment %} Override with cart total if item count is non-zero {% endcomment %}
+  {% if cart.item_count > 0 %}
+    {% assign cart_applicable = false %}
+    {% assign cart_total_val = 0 %}
+    {% assign cart_donation_total = 0 %}
+    
+    {% for item in cart.items %}
+      {% if item.line_price >= min_val_cents %}
+        {% assign cart_applicable = true %}
+        {% assign cart_total_val = cart_total_val | plus: item.line_price %}
+        {% if settings.donationType == "percentage" %}
+          {% assign pct = settings.donationValue | divided_by: 100.0 %}
+          {% assign line_donation = item.line_price | times: pct %}
+          {% assign cart_donation_total = cart_donation_total | plus: line_donation %}
+        {% else %}
+          {% assign line_donation = settings.donationValue | times: 100 | times: item.quantity %}
+          {% assign cart_donation_total = cart_donation_total | plus: line_donation %}
+        {% endif %}
+      {% endif %}
+    {% endfor %}
+
+    {% if cart_applicable %}
+      {% assign is_applicable = true %}
+      {% assign total_applicable_value_cents = cart_total_val %}
+      {% assign calculated_donation_cents = cart_donation_total %}
+    {% endif %}
+  {% endif %}
+{% else %}
+  {% assign order_total = cart.total_price | default: 0 %}
+  {% assign order_val = order_total | divided_by: 100.0 %}
+  {% if order_val >= min_val %}
+    {% assign is_applicable = true %}
+    {% assign total_applicable_value_cents = order_total %}
+    {% if settings.donationType == "percentage" %}
+      {% assign pct = settings.donationValue | divided_by: 100.0 %}
+      {% assign calculated_donation_cents = order_total | times: pct %}
+    {% else %}
+      {% assign calculated_donation_cents = settings.donationValue | times: 100 %}
+    {% endif %}
+  {% endif %}
+{% endif %}
+
+{% assign global_enabled = app.metafields.common.enabled.value %}
+{% assign container_display = 'block' %}
+{% if is_enabled == false or is_applicable == false or global_enabled == false %}
+  {% assign container_display = 'none' %}
+{% endif %}
+{% if block.settings.show_donation == false and request.design_mode == false %}
+  {% assign container_display = 'none' %}
+{% endif %}
+
+{% assign show_on_empty_cart = app.metafields.common.show_on_empty_cart.value | default: false %}
+{% if request.page_type != 'cart' or cart.item_count > 0 or show_on_empty_cart %}
+<div class="pos-card-wrapper" id="portion-sale-donation-{{ block.id }}" style="display: {{ container_display }};">
+  <div class="pos-premium-card">
+    <div class="pos-card-header">
+      <div class="pos-icon-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+      </div>
+      <h5 class="pos-heading">{{ block.settings.donation_heading }}</h5>
+    </div>
+    
+    <div class="pos-card-body" id="portion-sale-donation-content-{{ block.id }}">
+      {% if is_applicable %}
+        {% assign msg = settings.donationMessage | default: "{donationAmount} of {totalOrderValue} will be donated to charity" %}
+        
+        {% assign pct_str = settings.donationValue | append: "%" %}
+        {% assign msg = msg | replace: "{Percentage}", pct_str %}
+        
+        {% assign fixed_value_cents = settings.donationValue | times: 100 %}
+        {% assign fixed_str = fixed_value_cents | money %}
+        {% assign msg = msg | replace: "{FixedAmount}", fixed_str %}
+        
+        {% assign amt_str = calculated_donation_cents | money %}
+        {% assign msg = msg | replace: "{donationAmount}", amt_str %}
+        
+        {% assign total_str = total_applicable_value_cents | money %}
+        {% assign msg = msg | replace: "{totalOrderValue}", total_str %}
+        
+        <p class="portion-sale-donation-message">{{ msg }}</p>
+        
+        {% if settings.tooltipMessage != blank %}
+          <div class="pos-info-row">
+            <span class="pos-info-icon">ⓘ</span>
+            <span class="pos-info-text">{{ settings.tooltipMessage }}</span>
+          </div>
+        {% endif %}
+      {% endif %}
+    </div>
+    <!-- Galaxy Branding -->
+    <div id="pos-galaxy-branding-{{ block.id }}" class="pos-galaxy-branding" style="display:none;">
+      Powered by <a href="https://www.galaxyweblinks.com/" target="_blank" rel="noopener">Galaxy Weblinks Inc.</a>
+    </div>
+  </div>
+
+  <style>
+    .pos-galaxy-branding {
+      padding: 12px 24px 16px;
+      text-align: center;
+      font-size: 11px;
+      color: #9ca3af;
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+    }
+    .pos-galaxy-branding a {
+      color: #6C4A79;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .pos-galaxy-branding a:hover {
+      text-decoration: underline;
+    }
+    .pos-card-wrapper {
+      padding: 24px 0;
+      margin: 16px 0;
+    }
+    .pos-premium-card {
+      background: #ffffff;
+      border: 1px solid #f0f1f2;
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 4px 15px -3px rgba(0,0,0,0.05), 0 2px 6px -2px rgba(0,0,0,0.03);
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+    }
+    .pos-card-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .pos-icon-badge {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      background: #f7f3f9;
+      color: #6C4A79;
+      border-radius: 10px;
+    }
+    .pos-icon-badge svg {
+      width: 20px;
+      height: 20px;
+    }
+    .pos-heading {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 700;
+      color: #1a1c1d;
+      letter-spacing: -0.01em;
+    }
+    .portion-sale-donation-message {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #1a1c1d;
+      line-height: 1.6;
+    }
+    .pos-info-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px dashed #e1e3e5;
+      align-items: center;
+    }
+    .pos-info-icon {
+      color: #6d7175;
+      font-size: 14px;
+      opacity: 0.8;
+    }
+    .pos-info-text {
+      color: #6d7175;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    @media screen and (max-width: 480px) {
+      .pos-card-header { padding: 12px 16px; }
+      .pos-card-body { padding: 16px; }
+      .portion-sale-donation-message { font-size: 14px; }
+    }
+  </style>
+
+  {% if block.settings.show_donation %}
+    <script>
+      document.addEventListener("DOMContentLoaded", function() {
+        var contentEl = document.getElementById("portion-sale-donation-content-{{ block.id }}");
+        var baseSettings = {{ app.metafields.pos_donation.settings.value | json }};
+        if (!baseSettings) return;
+
+        if (baseSettings.enabled) {
+          fetch('/cart/update.js', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ attributes: { '_donation_widget_active': 'true' } })
+          }).catch(function(e) { console.error("Donation heartbeat failed:", e); });
+        }
+
+        var currencyIso = {{ cart.currency.iso_code | json }} || "USD";
+        var formatter = new Intl.NumberFormat(undefined, { style: 'currency', currency: currencyIso });
+
+        function formatMoney(cents) {
+            return formatter.format(cents / 100);
+        }
+
+        var donationBasis = (baseSettings.donationBasis || 'order').toString().trim().toLowerCase();
+        var donationType = (baseSettings.donationType || 'fixed').toString().trim().toLowerCase();
+        var donationValue = parseFloat(baseSettings.donationValue) || 0;
+        var minVal = parseFloat(baseSettings.minimumValue) || 0;
+        if (donationType === 'percentage') minVal = 0;
+
+        function updateMessage() {
+          var containerEl = document.getElementById("portion-sale-donation-{{ block.id }}");
+
+          fetch('/cart.js?t=' + new Date().getTime(), { cache: 'no-store' })
+            .then(function(res) { return res.json(); })
+            .then(function(cart) {
+              var isApplicable = false;
+              var totalValCents = 0;
+              var donationAmtCents = 0;
+
+              if (donationBasis === 'product') {
+                    var isCartPage = (window.location.pathname === '/cart')
+                                  || (document.querySelector('.cart__contents, .cart-template, [data-cart-form]') !== null);
+                    var isProductPage = !isCartPage && (
+                      (window.ShopifyAnalytics && window.ShopifyAnalytics.meta && window.ShopifyAnalytics.meta.product)
+                      || (window.meta && window.meta.product)
+                      || (document.querySelector('form[action*="/cart/add"], .product-form, .product-single, [data-product-id]') !== null)
+                    );
+
+                    var currentProductId = null;
+                    if (isProductPage) {
+                      if (window.ShopifyAnalytics && window.ShopifyAnalytics.meta && window.ShopifyAnalytics.meta.product) {
+                        currentProductId = window.ShopifyAnalytics.meta.product.id;
+                      } else if (window.meta && window.meta.product) {
+                        currentProductId = window.meta.product.id;
+                      }
+                    }
+
+                    if (cart.items && cart.items.length > 0) {
+                        cart.items.forEach(function(item) {
+                            if (isProductPage && currentProductId && String(item.product_id) === String(currentProductId)) {
+                              return;
+                            }
+                            var itemQty = item.quantity || 1;
+                            var itemUnitPrice = item.price || 0;
+                            var itemLinePrice = item.line_price || (itemUnitPrice * itemQty);
+
+                            if (itemUnitPrice / 100.0 >= minVal || itemLinePrice / 100.0 >= minVal) {
+                                isApplicable = true;
+                                totalValCents += itemLinePrice;
+                                if (donationType === 'percentage') {
+                                    donationAmtCents += itemLinePrice * (donationValue / 100.0);
+                                } else {
+                                    var lineDonation = donationValue * 100 * itemQty;
+                                    donationAmtCents += lineDonation;
+                                }
+                            }
+                        });
+                    }
+
+                    if (isProductPage) {
+                      var qty = 1;
+                      var qtyInput = document.querySelector(
+                        'input[name="quantity"], .quantity__input, ' +
+                        '.product-form__quantity input[type="number"], .quantity-input, ' +
+                        'input.quantity-selector, .product-form input[type="number"]'
+                      );
+                      if (qtyInput) qty = parseInt(qtyInput.value) || 1;
+                      
+                      var priceCents = 0;
+                      if (window.ShopifyAnalytics && window.ShopifyAnalytics.meta && window.ShopifyAnalytics.meta.product) {
+                        priceCents = window.ShopifyAnalytics.meta.product.variants[0].price;
+                        var urlParams = new URLSearchParams(window.location.search);
+                        var variantId = urlParams.get('variant');
+                        if (variantId) {
+                          var matched = window.ShopifyAnalytics.meta.product.variants.find(function(v) { return String(v.id) === String(variantId); });
+                          if (matched) priceCents = matched.price;
+                        }
+                      }
+                      if (!priceCents) {
+                        var priceEl = document.querySelector('[data-product-price], .product__price .money, .price--regular .money, .product-single__price');
+                        if (priceEl) {
+                          priceCents = Math.round(parseFloat(priceEl.textContent.replace(/[^0-9.]/g, '')) * 100) || 0;
+                        }
+                      }
+
+                      if (priceCents > 0 && (priceCents / 100.0) >= minVal) {
+                        isApplicable = true;
+                        totalValCents += priceCents * qty;
+                        if (donationType === 'percentage') {
+                          donationAmtCents += (donationValue / 100) * priceCents * qty;
+                        } else {
+                          donationAmtCents += donationValue * 100 * qty;
+                        }
+                      }
+                    }
+                } else {
+                    if (cart.total_price / 100.0 >= minVal) {
+                      isApplicable = true;
+                      totalValCents = cart.total_price;
+                      if (donationType === 'percentage') {
+                        donationAmtCents = (donationValue / 100) * totalValCents;
+                      } else {
+                        donationAmtCents = donationValue * 100;
+                      }
+                    }
+                }
+
+              var globalEnabled = {{ app.metafields.common.enabled.value | json }};
+              var showOnEmptyCart = {{ app.metafields.common.show_on_empty_cart.value | json }} || false;
+              if (globalEnabled === false || baseSettings.enabled === false) {
+                 containerEl.style.display = 'none';
+                 return;
+              }
+              
+              if (!isApplicable && !showOnEmptyCart) {
+                containerEl.style.display = 'none';
+                return;
+              } else {
+                containerEl.style.display = 'block';
+              }
+              
+              var msg = baseSettings.donationMessage || "{donationAmount} of {totalOrderValue} will be donated to charity";
+              
+              function smartReplace(html, variable, value) {
+                var regex = new RegExp('\\{(\\s*<[^>]*>\\s*)*' + variable + '(\\s*<[^>]*>\\s*)*\\}', 'gi');
+                // Escape $ to prevent capture group replacement issues
+                var safeValue = String(value).replace(/\$/g, '$$$$');
+                return html.replace(regex, safeValue);
+              }
+
+              msg = smartReplace(msg, "Percentage", donationValue + "%");
+              msg = smartReplace(msg, "FixedAmount", formatMoney(donationValue * 100));
+              msg = smartReplace(msg, "donationAmount", formatMoney(donationAmtCents));
+              msg = smartReplace(msg, "totalOrderValue", formatMoney(totalValCents));
+              
+              var html = '<p class="portion-sale-donation-message">' + msg + '</p>';
+              
+              var tooltip = baseSettings.tooltipMessage;
+              if (tooltip) {
+                  html += '<div class="pos-info-row"><span class="pos-info-icon">ⓘ</span><span class="pos-info-text">' + tooltip + '</span></div>';
+              }
+              contentEl.innerHTML = html;
+            }).catch(function(e) { console.error("Failed to update donation message:", e); });
+        }
+
+        var origFetch = window.fetch;
+        window.fetch = function() {
+          var url = arguments[0];
+          var urlStr = (typeof url === 'string') ? url : (url && url.url ? url.url : '');
+          var result = origFetch.apply(this, arguments);
+          if (urlStr && (urlStr.indexOf('/cart/change') !== -1 || urlStr.indexOf('/cart/update') !== -1 || urlStr.indexOf('/cart/add') !== -1)) {
+            result.then(function() {
+              setTimeout(updateMessage, 300);
+              setTimeout(updateMessage, 800);
+            }).catch(function(){});
+          }
+          return result;
+        };
+
+        var origXHROpen = XMLHttpRequest.prototype.open;
+        XMLHttpRequest.prototype.open = function(method, url) {
+          this._posUrl = url;
+          return origXHROpen.apply(this, arguments);
+        };
+        var origXHRSend = XMLHttpRequest.prototype.send;
+        XMLHttpRequest.prototype.send = function() {
+          var self = this;
+          var url = this._posUrl || '';
+          if (url.indexOf('/cart/change') !== -1 || url.indexOf('/cart/update') !== -1 || url.indexOf('/cart/add') !== -1) {
+            this.addEventListener('load', function() {
+              setTimeout(updateMessage, 300);
+              setTimeout(updateMessage, 800);
+            });
+          }
+          return origXHRSend.apply(this, arguments);
+        };
+
+        var originalPushState = history.pushState;
+        var originalReplaceState = history.replaceState;
+        
+        window.addEventListener('popstate', updateMessage);
+        history.pushState = function() { originalPushState.apply(this, arguments); updateMessage(); };
+        history.replaceState = function() { originalReplaceState.apply(this, arguments); updateMessage(); };
+
+        document.addEventListener('change', function(e) {
+          if (e.target.name === 'quantity' || e.target.classList.contains('quantity__input') || e.target.name === 'id') {
+            setTimeout(updateMessage, 150);
+          }
+        });
+        
+        document.addEventListener('input', function(e) {
+          if (e.target.name === 'quantity' || e.target.classList.contains('quantity__input')) {
+            updateMessage();
+          }
+        });
+        
+        document.addEventListener('click', function(e) {
+          var target = e.target;
+          if (target.closest(
+            '[name="quantity"], .quantity__input, .quantity-button, .qty-btn, ' +
+            '.quantity-selector, .js-qty__adjust, .ajaxcart__qty-adjust, ' +
+            '.cart__qty-btn, button[data-quantity-minus], button[data-quantity-plus], ' +
+            '.quantity__button, .cart-item__quantity-button'
+          )) {
+            // Multiple timeouts to catch AJAX-based cart updates
+            setTimeout(updateMessage, 200);
+            setTimeout(updateMessage, 600);
+            setTimeout(updateMessage, 1200);
+          }
+        });
+
+        try {
+          var qtyInputs = document.querySelectorAll('input[name="quantity"], .quantity__input, .cart-item__quantity input');
+          qtyInputs.forEach(function(qtyInput) {
+            var observer = new MutationObserver(function() { setTimeout(updateMessage, 100); });
+            observer.observe(qtyInput, { attributes: true, attributeFilter: ['value'] });
+          });
+        } catch(e) {}
+
+        updateMessage();
+        setTimeout(updateMessage, 500);
+        setTimeout(updateMessage, 2000);
+
+        (function() {
+          var brandingEl = document.getElementById("pos-galaxy-branding-{{ block.id }}");
+          if (!brandingEl) return;
+          var brandingIntervalId;
+          function runCheck() {
+            fetch("/apps/smart-donate-enhancement/api/plan-status?shop={{ shop.permanent_domain }}&t=" + Date.now())
+              .then(function(r) { return r.json(); })
+              .then(function(d) {
+                if (d && d.showBranding) {
+                  brandingEl.style.display = "";
+                } else {
+                  brandingEl.style.display = "none";
+                  if (brandingIntervalId) {
+                    clearInterval(brandingIntervalId);
+                  }
+                }
+              })
+              .catch(function() {});
+          }
+          runCheck();
+          brandingIntervalId = setInterval(runCheck, 5000);
+        })();
+      });
+    </script>
+  {% endif %}
+</div>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Portion of Sale Donation",
+  "target": "section",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "show_donation",
+      "label": "Show Donation Block",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "donation_heading",
+      "label": "Heading",
+      "default": "Portion of Sale Donation"
+    }
+  ]
+}
+{% endschema %}

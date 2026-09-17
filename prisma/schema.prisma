@@ -1,0 +1,357 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Session {
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?   @db.Text
+  expires             DateTime?
+  accessToken         String    @db.Text
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
+  refreshToken        String?   @db.Text
+  refreshTokenExpires DateTime?
+}
+
+model PosDonationSettings {
+  id              String   @id @default(uuid())
+  shop            String   @unique
+  enabled         Boolean  @default(false)
+  donationType    String   @default("percentage")
+  donationValue   Float    @default(5.0)
+  minimumValue    Float    @default(0)
+  donationMessage String   @db.Text
+  tooltipMessage  String   @default("A portion of your purchase supports charity")
+  orderTag        String   @default("galaxy_pos_donation")
+  donationBasis   String   @default("order")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Campaign {
+  id                 String     @id @default(uuid())
+  shop               String
+  name               String
+  description        String     @db.Text
+  enabled            Boolean    @default(true)
+  category           String     @default("Uncategorized")
+  imageUrl           String?    @db.LongText
+  displayStyle       String     @default("tabs")
+  donationAmounts    String     @db.Text
+  allowOtherAmount   Boolean    @default(true)
+  otherAmountTitle   String     @default("Other")
+  shopifyProductId   String?
+  shopifyVariantIds  String     @db.Text
+  isRecurringEnabled Boolean    @default(false)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  donations          Donation[]
+}
+
+model Donation {
+  id               String   @id @default(uuid())
+  campaignId       String
+  orderId          String?
+  orderNumber      String?
+  amount           Float
+  currency         String   @default("USD")
+  donorEmail       String?
+  donorName        String?
+  message          String?
+  shopifyProductId String?
+  shopifyVariantId String?
+  createdAt        DateTime @default(now())
+  status           String   @default("active")
+  isResent         Boolean  @default(false)
+  receiptStatus    String   @default("pending")
+  campaign         Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, shopifyVariantId])
+}
+
+model BlockConfig {
+  id                  String  @id @default(uuid())
+  shop                String  @unique
+  productBlockEnabled Boolean @default(true)
+  cartBlockEnabled    Boolean @default(true)
+}
+
+model PosDonationLog {
+  id             String    @id @default(uuid())
+  shop           String
+  orderId        String    @unique
+  orderNumber    String?
+  donationAmount Float
+  orderTotal     Float
+  currency       String    @default("USD")
+  status         String    @default("active")
+  receiptStatus  String    @default("pending")
+  receiptSentAt  DateTime?
+  isResent       Boolean   @default(false)
+  type           String    @default("pos")
+  createdAt      DateTime  @default(now())
+}
+
+model EmailSettings {
+  id                                 String   @id @default(uuid())
+  shop                               String   @unique
+  contactEmail                       String   @default("donations@yourstore.com")
+  ccEmail                            String?  @default("")
+
+  receiptSubject                     String   @default("Thank you for your donation")
+  receiptBody                        String?  @db.Text
+
+  refundSubject                      String   @default("Donation Refund Confirmation")
+  refundBody                         String?  @db.Text
+
+  cancelSubject                      String   @default("Donation Cancellation")
+  cancelBody                         String?  @db.Text
+
+  pauseSubject                       String   @default("Subscription Paused")
+  pauseBody                          String?  @db.Text
+
+  resumeSubject                      String   @default("Subscription Resumed")
+  resumeBody                         String?  @db.Text
+
+  logoUrl                            String?   @db.LongText
+
+  createdAt                          DateTime @default(now())
+  updatedAt                          DateTime @updatedAt
+
+  reminderBody                       String?  @db.Text
+  reminderSubject                    String   @default("Upcoming Donation Reminder: {{amount}}")
+
+  notifyMerchantOnSubscriptionChange Boolean  @default(false)
+
+  recoveryBody                       String?  @db.Text
+  recoverySubject                    String   @default("Action Required: Your donation payment failed")
+
+  receiptAcknowledgementText         String?  @db.Text
+  receiptFooterNote                  String?  @db.Text
+  receiptCancelAcknowledgementText   String?  @db.Text
+}
+
+model PlanSubscription {
+  id             String   @id @default(uuid())
+  shop           String   @unique
+  plan           String   @default("basic")
+  subscriptionId String?
+  status         String   @default("pending")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  pendingPlan    String?
+}
+
+model RecurringDonationConfig {
+  id                 String   @id @default(uuid())
+  shop               String   @unique
+  productId          String   @default("9957801099511")
+  productGid         String   @default("gid://shopify/Product/9957801099511")
+  sellingPlanGroupId String?
+  monthlyPlanId      String?
+  weeklyPlanId       String?
+  isActive           Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model AppSettings {
+  id              String   @id @default(uuid())
+  shop            String   @unique
+  enabled         Boolean  @default(true)
+  widgetTitle     String   @default("Donation")
+  buttonText      String   @default("Donate")
+  additionalCss   String   @default("")
+  displayThankYou Boolean  @default(true)
+  thankYouMessage String   @default("Thanks for Donating!!!!!!!")
+  sendReceipt     Boolean  @default(true)
+  receiveReceipt  Boolean  @default(true)
+  contactEmail    String   @default("")
+  ccEmail         String   @default("")
+  subjectLine     String   @default("Donation Receipt")
+  emailTemplate   String   @default("")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  showOnEmptyCart Boolean  @default(false)
+}
+
+model RecurringDonationLog {
+  id                     String    @id @default(uuid())
+  shop                   String
+  orderId                String    @unique
+  orderNumber            String?
+  donationAmount         Float
+  orderTotal             Float
+  currency               String    @default("USD")
+  status                 String    @default("active")
+  receiptStatus          String    @default("pending")
+  receiptSentAt          DateTime?
+  sellingPlanId          String?
+  subscriptionContractId String?
+  frequency              String    @default("one_time")
+  isResent               Boolean   @default(false)
+  type                   String    @default("recurring")
+  createdAt              DateTime  @default(now())
+}
+
+model RoundUpDonationSettings {
+  id                        String   @id @default(uuid())
+  shop                      String   @unique
+  enabled                   Boolean  @default(false)
+  campaignTitle             String   @default("Donation for better society")
+  description               String   @db.Text
+  showImage                 Boolean  @default(true)
+  checkboxLabel             String   @default("Yes, I want to donate (amount)")
+  rounding                  String   @default("nearest1")
+  donationOrderTag          String   @default("roundUpDonation")
+  customAmount              String?
+  imageUrl                  String?  @db.LongText
+  additionalDonationEnabled Boolean  @default(false)
+  additionalDonationTitle   String   @default("Add an extra donation (optional)")
+  placeholderText           String   @default("Enter amount")
+  buttonText                String   @default("Donate")
+  productId                 String?
+  productHandle             String?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+}
+
+model RoundUpDonationLog {
+  id             String    @id @default(uuid())
+  shop           String
+  orderId        String    @unique
+  orderNumber    String?
+  donationAmount Float
+  orderTotal     Float
+  currency       String    @default("USD")
+  status         String    @default("active")
+  receiptStatus  String    @default("pending")
+  receiptSentAt  DateTime?
+  isResent       Boolean   @default(false)
+  type           String    @default("roundup")
+  createdAt      DateTime  @default(now())
+}
+
+model subscription {
+  id                  String    @id @default(cuid())
+  shop                String
+  customerId          String
+  orderId             String    @unique
+  status              String
+  frequency           String
+  amount              Float
+  currency            String
+  nextBillingDate     DateTime
+  createdAt           DateTime  @default(now())
+  lastReminderDate    DateTime?
+  reminderSentForDate DateTime?
+}
+
+model CustomerSubscription {
+  id             String   @id @default(uuid())
+  shop           String
+  customerId     String
+  customerName   String?
+  customerEmail  String?
+  orderId        String?
+  orderName      String?
+  amount         Float
+  currency       String   @default("USD")
+  interval       String   @default("Monthly")
+  status         String   @default("active")
+  subscriptionId String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model PaymentRecoverySettings {
+  id                String   @id @default(uuid())
+  shop              String   @unique
+  enabled           Boolean  @default(true)
+  retryAttempts     Int      @default(3)
+  retryInterval     Int      @default(3)
+  fallbackAction    String   @default("skip")
+  sendNotifications Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model PaymentRecoveryLog {
+  id                     String    @id @default(uuid())
+  shop                   String
+  subscriptionContractId String
+  orderId                String?
+  orderNumber            String?
+  customerEmail          String?
+  customerName           String?
+  amount                 Float     @default(0)
+  currency               String    @default("USD")
+  errorCode              String?
+  errorMessage           String?
+  retryCount             Int       @default(0)
+  maxRetries             Int       @default(3)
+  retryInterval          Int       @default(3)
+  nextRetryDate          DateTime?
+  fallbackAction         String    @default("skip")
+  status                 String    @default("pending")
+  donationName           String?
+  frequency              String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  @@unique([shop, subscriptionContractId])
+  @@index([status, nextRetryDate])
+}
+
+model BillingAttemptLog {
+  id                     String    @id @default(uuid())
+  shop                   String
+  subscriptionContractId String
+  billingCycleIndex      Int?
+  billingAttemptId       String?   @unique           // Shopify billing attempt GID — dedup key
+  source                 String    @default("webhook") // "webhook" | "cron_retry" | "manual"
+  status                 String    @default("failed")  // "failed" | "success" | "pending"
+  errorCode              String?
+  errorMessage           String?
+  orderId                String?                       // Populated on success
+  orderNumber            String?                       // Populated on success
+  customerEmail          String?
+  customerName           String?
+  amount                 Float     @default(0)
+  currency               String    @default("USD")
+  donationName           String?
+  frequency              String?
+  retryNumber            Int       @default(0)         // Which retry attempt (0 = initial failure)
+  idempotencyKey         String?
+  rawPayload             String?                       // Raw webhook payload — stored for failures only
+  createdAt              DateTime  @default(now())
+
+  @@index([shop, subscriptionContractId])
+  @@index([shop, status])
+  @@index([createdAt])
+}
+
+// Atomic lock to prevent duplicate webhook processing (ORDERS_CREATE vs ORDERS_PAID race)
+model WebhookProcessingLock {
+  id        String   @id @default(uuid())
+  orderId   String   @unique
+  shop      String
+  topic     String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
