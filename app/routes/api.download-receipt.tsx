@@ -2,6 +2,7 @@ import type { LoaderFunctionArgs } from "react-router";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 import { generateReceiptPDF } from "../utils/receipt-pdf.server";
+import { hasActiveSubscription } from "../utils/features";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
     const url = new URL(request.url);
@@ -31,6 +32,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     }
 
     const shop = session.shop;
+
+    const subscription = await prisma.planSubscription.findUnique({ where: { shop } });
+    if (!hasActiveSubscription(subscription, "canDownloadReceipt")) {
+        return new Response("PDF receipt downloads are available on Advanced and Pro plans.", { status: 403 });
+    }
 
     // Load merchant's custom PDF receipt text settings
     const emailSettings = await prisma.emailSettings.findUnique({ where: { shop } });

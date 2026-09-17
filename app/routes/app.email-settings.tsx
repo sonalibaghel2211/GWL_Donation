@@ -799,7 +799,8 @@ export default function EmailSettingsPage() {
                                         </div>
 
                                         <s-stack direction="block" gap="base">
-                                            {(selectedTab === "refund" && !hasActiveSubscription(subscription, "canSendRefundEmail")) ||
+                                            {(selectedTab === "receipt" && !hasActiveSubscription(subscription, "canSendReceiptEmail")) ||
+                                            (selectedTab === "refund" && !hasActiveSubscription(subscription, "canSendRefundEmail")) ||
                                             (selectedTab === "cancel" && !hasActiveSubscription(subscription, "canSendCancelEmail")) ||
                                             (selectedTab === "reminder" && !hasActiveSubscription(subscription, "canSendReminders")) ? (
                                                 <s-box padding="large-200" background="subdued" borderRadius="base" borderWidth="base">
@@ -809,7 +810,7 @@ export default function EmailSettingsPage() {
                                                             <s-box padding-block-start="base">
                                                                 <s-text color="subdued">
                                                                     The {selectedTab} email feature is available on the
-                                                                    <strong> {selectedTab === "refund" ? "Advanced" : selectedTab === "reminder" ? "Advanced" : "Pro"}</strong> plan and above.
+                                                                    <strong> {selectedTab === "cancel" ? "Pro" : "Advanced"}</strong> plan and above.
                                                                 </s-text>
                                                             </s-box>
                                                             <s-box padding-block-start="base">
@@ -984,6 +985,25 @@ export default function EmailSettingsPage() {
                                         </div>
 
                                         <s-stack direction="block" gap="base">
+                                            {!hasActiveSubscription(subscription, "canDownloadReceipt") && (
+                                                <s-box padding="large-200" background="subdued" borderRadius="base" borderWidth="base" style={{ marginBottom: "16px" }}>
+                                                    <s-stack direction="block" gap="base">
+                                                        <div style={{ textAlign: "center", width: "100%" }}>
+                                                            <s-text type="strong">Plan Upgrade Required</s-text>
+                                                            <s-box padding-block-start="base">
+                                                                <s-text color="subdued">
+                                                                    PDF receipt downloads and customization are available on the <strong>Advanced</strong> and <strong>Pro</strong> plans.
+                                                                </s-text>
+                                                            </s-box>
+                                                            <s-box padding-block-start="base">
+                                                                <Link to="/app/pricing" style={{ textDecoration: "none" }}>
+                                                                    <s-button variant="primary">View Pricing Plans</s-button>
+                                                                </Link>
+                                                            </s-box>
+                                                        </div>
+                                                    </s-stack>
+                                                </s-box>
+                                            )}
                                             <div style={{ padding: "4px 0" }}>
                                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
                                                     <span style={{ fontWeight: 500 }}>

@@ -8,6 +8,8 @@ import {
 } from "../utils/donation-helpers.server";
 import { generateReceiptPDF } from "../utils/receipt-pdf.server";
 
+import { hasActiveSubscription } from "../utils/features";
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
     const url = new URL(request.url);
     const donationId = url.searchParams.get("id");
@@ -38,6 +40,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     }
 
     const shop = session?.shop || "";
+
+    const subscription = await prisma.planSubscription.findUnique({ where: { shop } });
+    if (!hasActiveSubscription(subscription, "canDownloadReceipt")) {
+        return new Response("Receipt downloads are available on Advanced and Pro plans.", { status: 403 });
+    }
 
     // Load merchant email settings for custom PDF text
     const emailSettings = await prisma.emailSettings.findUnique({ where: { shop } });

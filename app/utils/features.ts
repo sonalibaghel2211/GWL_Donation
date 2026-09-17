@@ -6,6 +6,7 @@ export interface PlanFeatures {
     canUsePercentageDonation: boolean;
     canUseRecurringDonations: boolean;
     canSendReceiptEmail: boolean;
+    canDownloadReceipt: boolean;
     canSendRefundEmail: boolean;
     canSendCancelEmail: boolean;
     canEditTemplates: boolean;
@@ -21,7 +22,8 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
         maxCampaigns: 1,
         canUsePercentageDonation: false,
         canUseRecurringDonations: false,
-        canSendReceiptEmail: true,
+        canSendReceiptEmail: false,
+        canDownloadReceipt: false,
         canSendRefundEmail: false,
         canSendCancelEmail: false,
         canEditTemplates: false,
@@ -36,6 +38,7 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
         canUsePercentageDonation: true,
         canUseRecurringDonations: true,
         canSendReceiptEmail: true,
+        canDownloadReceipt: true,
         canSendRefundEmail: true,
         canSendCancelEmail: false,
         canEditTemplates: false,
@@ -50,6 +53,7 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
         canUsePercentageDonation: true,
         canUseRecurringDonations: true,
         canSendReceiptEmail: true,
+        canDownloadReceipt: true,
         canSendRefundEmail: true,
         canSendCancelEmail: true,
         canEditTemplates: true,

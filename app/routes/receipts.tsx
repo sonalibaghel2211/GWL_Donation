@@ -7,6 +7,8 @@ import {
     normalizeOrderIdToNumeric,
 } from "../utils/donation-helpers.server";
 
+import { hasActiveSubscription } from "../utils/features";
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
     const url = new URL(request.url);
 
@@ -57,14 +59,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const customerId = url.searchParams.get("logged_in_customer_id");
     const shop = session?.shop || "";
 
-    // ── Check merchant plan is active ──
+    // ── Check merchant plan is active and has receipt download feature ──
     try {
         const planSub = await prisma.planSubscription.findUnique({ where: { shop } });
-        if (!planSub || planSub.status !== "active") {
+        if (!hasActiveSubscription(planSub, "canDownloadReceipt")) {
             return liquid(`
                 <div style="max-width:600px;margin:60px auto;font-family:sans-serif;text-align:center;">
                     <h2>Service Unavailable</h2>
-                    <p style="color:#666;">Donation receipts are currently unavailable. Please try again later.</p>
+                    <p style="color:#666;">Donation receipt downloads are available on Advanced and Pro plans.</p>
                 </div>
             `);
         }

@@ -104,6 +104,11 @@ export default function DonationActivity() {
     const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
     const handleDownload = useCallback(async (logId: string, source: string) => {
+        if (!hasActiveSubscription(subscription, "canDownloadReceipt")) {
+            shopify.toast.show("PDF receipt downloads are available on Advanced and Pro plans. Upgrade to download.", { isError: true } as any);
+            return;
+        }
+
         const param = source === "preset" ? "donationId" : "logId";
         const downloadUrl = `/api/download-receipt?${param}=${encodeURIComponent(logId)}`;
 
@@ -202,7 +207,7 @@ export default function DonationActivity() {
             orderTotal: 0,
             currency: d.currency,
             status: d.status || "active",
-            receiptStatus: d.receiptStatus || "sent",
+            receiptStatus: d.receiptStatus || "pending",
             isResent: d.isResent || false,
             visualType: "Preset",
             source: "preset"
@@ -230,6 +235,30 @@ export default function DonationActivity() {
     return (
         <div style={{ paddingBottom: "40px" }}>
             <s-page heading="Donation Activity">
+                {!hasActiveSubscription(subscription, "canSendReceiptEmail") && (
+                    <div style={{
+                        backgroundColor: "#f4f5f7",
+                        border: "1px solid #d2d5d9",
+                        borderRadius: "8px",
+                        padding: "12px 16px",
+                        marginBottom: "16px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        fontSize: "13px",
+                        color: "#202223"
+                    }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <span style={{ fontSize: "16px" }}>ℹ️</span>
+                            <span>
+                                <strong>Paid Plan Features (Advanced & Pro):</strong> Automatic receipt emails and PDF receipt downloads require an Advanced or Pro plan. Order tags, customer tags, order notes, activity logs, and totals remain 100% active on Free plan.
+                            </span>
+                        </div>
+                        <Link to="/app/pricing" style={{ color: "#6C4A79", fontWeight: "600", textDecoration: "none", whiteSpace: "nowrap", marginLeft: "16px" }}>
+                            Upgrade Plan ↗
+                        </Link>
+                    </div>
+                )}
                 <div className="polaris-tabs">
                     <div className="polaris-tabs-list" role="tablist">
                         {[
@@ -372,10 +401,10 @@ export default function DonationActivity() {
                                                     borderRadius: "25px",
                                                     fontSize: "11px",
                                                     fontWeight: "600",
-                                                    background: log.receiptStatus === "sent" ? "#affebf " : log.receiptStatus === "failed" ? "#fbeae5" : "#f1f1f1",
-                                                    color: log.receiptStatus === "sent" ? "#2e5648" : log.receiptStatus === "failed" ? "#8e1f0b" : "#5C5F62"
+                                                    background: log.receiptStatus === "sent" ? "#affebf" : log.receiptStatus === "failed" ? "#fbeae5" : log.receiptStatus === "skipped" ? "#e4e5e7" : "#f1f1f1",
+                                                    color: log.receiptStatus === "sent" ? "#2e5648" : log.receiptStatus === "failed" ? "#8e1f0b" : log.receiptStatus === "skipped" ? "#4a4c4e" : "#5C5F62"
                                                 }}>
-                                                    {log.receiptStatus === "sent" ? "Sent" : log.receiptStatus === "failed" ? "Failed" : "Pending"}
+                                                    {log.receiptStatus === "sent" ? "Sent" : log.receiptStatus === "failed" ? "Failed" : log.receiptStatus === "skipped" ? "Skipped" : "Pending"}
                                                 </div>
                                             </td>
                                             <td style={{ padding: "12px 10px", textAlign: "right", background: "white" }}>

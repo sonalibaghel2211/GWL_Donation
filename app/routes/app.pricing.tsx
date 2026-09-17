@@ -252,7 +252,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 const BASIC_FEATURES = [
     "Donation create (basic)",
     "Portion of sale (fixed only)",
-    "Receipt email notification",
     "Basic UI & Design",
     "Order Tagging",
     "Community support",
@@ -260,6 +259,8 @@ const BASIC_FEATURES = [
 
 const ADVANCED_FEATURES = [
     "Everything in Basic",
+    "Receipt email notification",
+    "PDF receipt download",
     "Portion of sale (percentage based)",
     "Refund email notification",
     "Filters / pagination",
