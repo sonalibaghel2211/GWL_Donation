@@ -40,10 +40,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
         // Skip if already processed to prevent duplicates
         const [posExists, recExists, roundExists, presetExists] = await Promise.all([
-            db.posDonationLog.findFirst({ where: { orderId: orderIdStr } }),
-            db.recurringDonationLog.findFirst({ where: { orderId: orderIdStr } }),
-            db.roundUpDonationLog.findFirst({ where: { orderId: orderIdStr } }),
-            db.donation.findFirst({ where: { orderId: orderId } }),
+            db.posDonationLog.findFirst({ where: { OR: [{ orderId: orderIdStr }, { orderId: orderId }] } }),
+            db.recurringDonationLog.findFirst({ where: { OR: [{ orderId: orderIdStr }, { orderId: orderId }] } }),
+            db.roundUpDonationLog.findFirst({ where: { OR: [{ orderId: orderIdStr }, { orderId: orderId }] } }),
+            db.donation.findFirst({ where: { OR: [{ orderId: orderIdStr }, { orderId: orderId }] } }),
         ]);
 
         if (posExists || recExists || roundExists || presetExists) {
@@ -57,8 +57,20 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             return new Response("OK - app globally disabled", { status: 200 });
         }
 
-        const subscription = await db.planSubscription.findUnique({ where: { shop } });
-        if (!subscription || subscription.status !== "active") {
+        let subscription = await db.planSubscription.findUnique({ where: { shop } });
+        if (!subscription) {
+            subscription = {
+                id: "default-basic",
+                shop,
+                plan: "basic",
+                subscriptionId: null,
+                status: "active",
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                pendingPlan: null,
+            };
+        }
+        if (subscription.status !== "active") {
             return new Response("OK - no active subscription", { status: 200 });
         }
 
@@ -118,12 +130,60 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                         const productIdStr = item.product_id.toString();
                         const variantIdStr = item.variant_id?.toString() || null;
 
-                        const matchingCampaign = await db.campaign.findFirst({
-                            where: {
-                                shop: shop,
-                                shopifyProductId: { endsWith: productIdStr },
-                            },
-                        });
+                        // Check line item properties for campaign name or donation indicators
+                        const campaignProp = (item.properties || []).find(
+                            (p: any) => ["Donation Campaign", "_donation_campaign", "Campaign", "_campaign"].includes(p.name)
+                        );
+                        const donationAmountProp = (item.properties || []).find(
+                            (p: any) => ["_Donation Amount", "Donation Amount", "donation_amount", "_donation_amount"].includes(p.name)
+                        );
+                        const widgetActiveProp = (item.properties || []).find(
+                            (p: any) => ["_donation_widget_active", "donation_widget_active"].includes(p.name)
+                        );
+
+                        let matchingCampaign: any = null;
+
+                        // 1. Match by campaign name from line item property
+                        if (campaignProp?.value) {
+                            matchingCampaign = await db.campaign.findFirst({
+                                where: { shop, name: String(campaignProp.value) }
+                            });
+                        }
+
+                        // 2. Match by shopifyProductId
+                        if (!matchingCampaign && productIdStr) {
+                            matchingCampaign = await db.campaign.findFirst({
+                                where: {
+                                    shop: shop,
+                                    shopifyProductId: { endsWith: productIdStr },
+                                },
+                            });
+                        }
+
+                        // 3. Match by line item title
+                        if (!matchingCampaign && item.title) {
+                            matchingCampaign = await db.campaign.findFirst({
+                                where: { shop, name: String(item.title) }
+                            });
+                        }
+
+                        // 4. Match by variant ID in shopifyVariantIds
+                        if (!matchingCampaign && variantIdStr) {
+                            matchingCampaign = await db.campaign.findFirst({
+                                where: {
+                                    shop,
+                                    shopifyVariantIds: { contains: variantIdStr }
+                                }
+                            });
+                        }
+
+                        // 5. Fallback: line item has explicit donation properties or donation title
+                        const hasDonationProp = (item.properties || []).some((p: any) =>
+                            ["Donation Campaign", "_donation_campaign", "_Donation Amount", "Donation Amount", "_donation_widget_active", "Custom Amount"].includes(p.name)
+                        );
+                        if (!matchingCampaign && (hasDonationProp || (item.title && item.title.toLowerCase().includes("donation")))) {
+                            matchingCampaign = await db.campaign.findFirst({ where: { shop } });
+                        }
 
                         if (matchingCampaign) {
                             const hasSellingPlan = !!(item.selling_plan_allocation);
@@ -971,13 +1031,29 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                         // Remove existing if any to ensure fresh values
                         const finalAttrs = currentAttrs.filter((a: any) => a.key !== donationLabel && a.key !== donationTypeLabel);
 
-                        finalAttrs.push({ key: donationLabel, value: formatCurrency(donationAmtFormatted, order.currency) });
+                        const formattedDonationVal = formatCurrency(donationAmtFormatted, order.currency);
+                        finalAttrs.push({ key: donationLabel, value: formattedDonationVal });
                         finalAttrs.push({ key: donationTypeLabel, value: typeValue });
 
-                        await admin.graphql(`#graphql
-                        mutation orderUpdate($input: OrderInput!) { orderUpdate(input: $input) { order { id } } }`,
-                            { variables: { input: { id: orderIdStr, tags: existingTags, customAttributes: finalAttrs } } }
+                        let updatedNote = order.note || "";
+                        const donationNoteLine = `Donation Amount: ${formattedDonationVal} (${typeValue})`;
+                        if (!updatedNote.includes("Donation Amount:")) {
+                            updatedNote = updatedNote ? `${updatedNote}\n${donationNoteLine}` : donationNoteLine;
+                        }
+
+                        const updateResult = await admin.graphql(`#graphql
+                        mutation orderUpdate($input: OrderInput!) {
+                            orderUpdate(input: $input) {
+                                order { id tags note }
+                                userErrors { field message }
+                            }
+                        }`,
+                            { variables: { input: { id: orderIdStr, tags: existingTags, customAttributes: finalAttrs, note: updatedNote } } }
                         );
+                        const updateJson = await updateResult.json();
+                        if (updateJson.data?.orderUpdate?.userErrors?.length > 0) {
+                            console.error("[Webhook] Order update userErrors:", updateJson.data.orderUpdate.userErrors);
+                        }
                     } catch (e) {
                         console.error("Tagging Error:", e);
                     }
