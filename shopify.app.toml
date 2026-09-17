@@ -2,7 +2,7 @@
 
 client_id = "15f0a10bc86df9d36a02da61ce944525"
 name = "Gwl Donation review "
-application_url = "https://your-dev-app.example.com/"
+application_url = "https://smart-donation-enhancement.vercel.app"
 embedded = true
 
 [build]
@@ -69,11 +69,11 @@ scopes = "read_customer_payment_methods,read_customers,read_orders,read_own_subs
 
 [auth]
 redirect_urls = [
-  "https://your-dev-app.example.com/auth/callback",
-  "https://your-dev-app.example.com/api/auth"
+  "https://smart-donation-enhancement.vercel.app/auth/callback",
+  "https://smart-donation-enhancement.vercel.app/api/auth"
 ]
 
 [app_proxy]
-url = "https://your-dev-app.example.com"
+url = "https://smart-donation-enhancement.vercel.app"
 subpath = "smart-donate-enhancement"
 prefix = "apps"
