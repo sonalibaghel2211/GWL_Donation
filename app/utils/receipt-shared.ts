@@ -1,4 +1,28 @@
+export interface ReceiptPDFArgs {
+    shopName: string;
+    customerName: string;
+    customerEmail: string;
+    orderNumber: string;
+    donationAmount: string;
+    donationType: string;
+    frequency: string;
+    campaignName: string;
+    createdDate: Date;
+    shippingAddress: string;
+    billingAddress: string;
+    currencyCode: string;
+    status: string;
+    receiptNumber: string;
+    cancellationDate?: Date;
+    originalReceiptNumber?: string;
+    acknowledgementText?: string;
+    footerNote?: string;
+    cancelAcknowledgementText?: string;
+    logoUrl?: string;
+}
+
 export function getEffectiveLogoUrl(logoUrl?: string): string {
+
     if (!logoUrl || !logoUrl.trim() || logoUrl === "null" || logoUrl === "undefined") {
         return "";
     }
