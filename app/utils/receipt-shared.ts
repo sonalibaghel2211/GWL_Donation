@@ -265,7 +265,7 @@ export const DEFAULT_DONATION_RECEIPT_TEMPLATE = `<!DOCTYPE html>
     
     <div class="signature-block">
       <p style="font-style: italic; color: #666666; margin-bottom: 10px;">Authorized by,</p>
-      <div class="signature-title">Smart Donate Team</div>
+      <div class="signature-title">Smart Donate Support</div>
       <div style="color: #666666;">{{shop_name}}</div>
     </div>
     
@@ -521,7 +521,7 @@ export const DEFAULT_CANCEL_RECEIPT_TEMPLATE = `<!DOCTYPE html>
     
     <div class="signature-block">
       <p style="font-style: italic; color: #666666; margin-bottom: 10px;">Authorized by,</p>
-      <div class="signature-title">Smart Donate Team</div>
+      <div class="signature-title">Smart Donate Support</div>
       <div style="color: #666666;">{{shop_name}}</div>
     </div>
     

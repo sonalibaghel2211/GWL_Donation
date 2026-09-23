@@ -75,6 +75,38 @@ function resolveVars(args: ReceiptPDFArgs) {
     };
 }
 
+// ─── Helper: extract signature title from template ─────────
+function resolveSignatureTitle(args: ReceiptPDFArgs, isVoided: boolean): string {
+    const rawTemplate = isVoided
+        ? (args.cancelAcknowledgementText || "")
+        : (args.acknowledgementText || "");
+
+    if (rawTemplate) {
+        const match = rawTemplate.match(/class=["']signature-title["'][^>]*>([\s\S]*?)<\/div>/i);
+        if (match && match[1]) {
+            const extracted = stripHtml(match[1]).trim();
+            if (extracted) return extracted;
+        }
+    }
+    return "Smart Donate Support";
+}
+
+// ─── Helper: extract authorized by text from template ──────
+function resolveAuthorizedByText(args: ReceiptPDFArgs, isVoided: boolean): string {
+    const rawTemplate = isVoided
+        ? (args.cancelAcknowledgementText || "")
+        : (args.acknowledgementText || "");
+
+    if (rawTemplate) {
+        const match = rawTemplate.match(/<p[^>]*style=["'][^"']*italic[^"']*["'][^>]*>([\s\S]*?)<\/p>/i);
+        if (match && match[1]) {
+            const extracted = stripHtml(match[1]).trim();
+            if (extracted) return extracted;
+        }
+    }
+    return "Authorized by,";
+}
+
 // ─── Helper: resolve acknowledgement body text ──────────────
 function resolveAcknowledgement(args: ReceiptPDFArgs, isVoided: boolean, vars: ReturnType<typeof resolveVars>): string {
     let bodyTemplate: string;
@@ -85,10 +117,14 @@ function resolveAcknowledgement(args: ReceiptPDFArgs, isVoided: boolean, vars: R
         bodyTemplate = args.acknowledgementText || DEFAULT_DONATION_LETTER_BODY;
     }
 
-    // If the merchant saved a full HTML template (the entire receipt), extract just the letter-body part
-    if (/<html/i.test(bodyTemplate) || /<style/i.test(bodyTemplate)) {
-        // They saved the full template; use the default letter body instead
-        bodyTemplate = isVoided ? DEFAULT_CANCEL_LETTER_BODY : DEFAULT_DONATION_LETTER_BODY;
+    // If the merchant saved a full HTML template, extract the letter-body section
+    if (/<html/i.test(bodyTemplate) || /<style/i.test(bodyTemplate) || /<div class="letter-body"/i.test(bodyTemplate)) {
+        const letterBodyMatch = bodyTemplate.match(/<div class=["']letter-body["'][^>]*>([\s\S]*?)<\/div>/i);
+        if (letterBodyMatch && letterBodyMatch[1] && letterBodyMatch[1].trim()) {
+            bodyTemplate = letterBodyMatch[1].trim();
+        } else {
+            bodyTemplate = isVoided ? DEFAULT_CANCEL_LETTER_BODY : DEFAULT_DONATION_LETTER_BODY;
+        }
     }
 
     // Substitute template variables
@@ -105,6 +141,7 @@ function resolveAcknowledgement(args: ReceiptPDFArgs, isVoided: boolean, vars: R
         zero_amount: vars.zeroAmountStr,
         receipt_number: args.receiptNumber || "N/A",
         order_number: args.orderNumber,
+        acknowledgement_text: isVoided ? DEFAULT_CANCEL_LETTER_BODY : DEFAULT_DONATION_LETTER_BODY,
     };
 
     let result = bodyTemplate;
@@ -343,11 +380,14 @@ export async function generateReceiptPDF(args: ReceiptPDFArgs): Promise<Buffer> 
     doc.y += 14;
 
     // ─── Signature Block ───────────────────────────────────
+    const authorizedByText = resolveAuthorizedByText(pdfArgs, isVoided);
+    const signatureTitle = resolveSignatureTitle(pdfArgs, isVoided);
+
     doc.font("Helvetica-Oblique").fontSize(9).fillColor(COLORS.label)
-        .text("Authorized by,", leftMargin, doc.y);
+        .text(authorizedByText, leftMargin, doc.y);
     doc.y += 4;
     doc.font("Helvetica-Bold").fontSize(9.5).fillColor(COLORS.text)
-        .text("Smart Donate Team", leftMargin, doc.y);
+        .text(signatureTitle, leftMargin, doc.y);
     doc.y += 2;
     doc.font("Helvetica").fontSize(9).fillColor(COLORS.label)
         .text(vars.shopDisplayName, leftMargin, doc.y);
