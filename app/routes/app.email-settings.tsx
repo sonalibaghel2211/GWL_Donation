@@ -205,7 +205,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
     let currencyCode = "USD";
     try {
-        const currencyResponse = await admin.graphql(`#graphql query { shop { currencyCode } }`);
+        const currencyResponse = await admin.graphql(`query { shop { currencyCode } }`);
         const currencyData = await currencyResponse.json();
         if (currencyData.data?.shop?.currencyCode) {
             currencyCode = currencyData.data.shop.currencyCode;
@@ -331,6 +331,14 @@ export default function EmailSettingsPage() {
 
     // Snapshot of initial settings for dirty-state detection
     const [initialSettings, setInitialSettings] = useState<EmailSettings>(() => ({ ...settings }));
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [selectedTab, setSelectedTab] = useState("receipt");
+    const [previewMode, setPreviewMode] = useState(false);
+    const [receiptPreviewMode, setReceiptPreviewMode] = useState(false);
+    const [previewingType, setPreviewingType] = useState<"donation" | "cancel" | null>(null);
+    const [downloadingType, setDownloadingType] = useState<"donation" | "cancel" | null>(null);
+    const [verticalSection, setVerticalSection] = useState<"emails" | "receipts">("emails");
+    const [previewPdfUrl, setPreviewPdfUrl] = useState<string>("");
 
     const isSaving =
         fetcher.state === "submitting" && fetcher.formMethod === "POST";
@@ -355,15 +363,6 @@ export default function EmailSettingsPage() {
     const hasChanges = Object.keys(settings).some(
         (key) => settings[key as keyof EmailSettings] !== initialSettings[key as keyof EmailSettings]
     );
-
-    const [errors, setErrors] = useState<Record<string, string>>({});
-    const [selectedTab, setSelectedTab] = useState("receipt");
-    const [previewMode, setPreviewMode] = useState(false);
-    const [receiptPreviewMode, setReceiptPreviewMode] = useState(false);
-    const [previewingType, setPreviewingType] = useState<"donation" | "cancel" | null>(null);
-    const [downloadingType, setDownloadingType] = useState<"donation" | "cancel" | null>(null);
-    const [verticalSection, setVerticalSection] = useState<"emails" | "receipts">("emails");
-    const [previewPdfUrl, setPreviewPdfUrl] = useState<string>("");
 
     const buildReceiptPreviewHtml = useCallback(() => {
         const isCancel = selectedTab === "pdf-cancel";
