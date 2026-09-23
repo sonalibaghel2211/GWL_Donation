@@ -144,9 +144,10 @@ export async function generateReceiptPDF(args: ReceiptPDFArgs): Promise<Buffer> 
     const leftMargin = doc.page.margins.left;
 
     // ─── Header Bar ────────────────────────────────────────
+    const headerY = doc.y;
     const headerHeight = 60;
     doc.save();
-    doc.roundedRect(leftMargin, doc.y, pageWidth, headerHeight, 6)
+    doc.roundedRect(leftMargin, headerY, pageWidth, headerHeight, 6)
         .fill(accent);
 
     // Logo (if data URI)
@@ -154,7 +155,7 @@ export async function generateReceiptPDF(args: ReceiptPDFArgs): Promise<Buffer> 
     if (logoUrl && logoUrl.startsWith("data:image/")) {
         try {
             const logoBuffer = Buffer.from(logoUrl.split(",")[1], "base64");
-            doc.image(logoBuffer, leftMargin + 16, doc.y - headerHeight + 10, {
+            doc.image(logoBuffer, leftMargin + 16, headerY + 15, {
                 height: 30,
                 fit: [120, 30],
             });
@@ -165,13 +166,12 @@ export async function generateReceiptPDF(args: ReceiptPDFArgs): Promise<Buffer> 
     }
 
     const headerTextX = leftMargin + 16 + logoXOffset;
-    const headerTextY = doc.y - headerHeight + 14;
+    const headerTextY = headerY + 14;
     doc.font("Helvetica-Bold").fontSize(16).fillColor(COLORS.white)
         .text(isVoided ? "CANCELLATION RECEIPT" : "DONATION RECEIPT", headerTextX, headerTextY);
     doc.font("Helvetica").fontSize(9).fillColor(COLORS.white).fillOpacity(0.85)
         .text("Smart Donate · Recurring & Receipts", headerTextX, headerTextY + 20);
     doc.fillOpacity(1); // Reset opacity
-
 
     // Date on right side
     doc.font("Helvetica").fontSize(9).fillColor(COLORS.white)
@@ -182,21 +182,23 @@ export async function generateReceiptPDF(args: ReceiptPDFArgs): Promise<Buffer> 
         );
     doc.restore();
 
-    doc.y = doc.y + 8;
+    // Advance doc.y past the header bar
+    doc.y = headerY + headerHeight + 16;
 
     // ─── Void Banner (cancel only) ─────────────────────────
     if (isVoided) {
+        const voidY = doc.y;
         doc.save();
-        doc.rect(leftMargin, doc.y, pageWidth, 28).fill(COLORS.cancelLight);
-        doc.rect(leftMargin, doc.y, 3, 28).fill(COLORS.cancelPrimary);
+        doc.rect(leftMargin, voidY, pageWidth, 28).fill(COLORS.cancelLight);
+        doc.rect(leftMargin, voidY, 3, 28).fill(COLORS.cancelPrimary);
         doc.font("Helvetica-Bold").fontSize(9).fillColor(COLORS.cancelPrimary)
             .text(
                 "VOIDED — This donation has been cancelled. This receipt is not valid for tax deduction purposes.",
-                leftMargin + 14, doc.y + 8,
+                leftMargin + 14, voidY + 8,
                 { width: pageWidth - 28 }
             );
         doc.restore();
-        doc.y = doc.y + 36;
+        doc.y = voidY + 36;
     }
 
     // ─── Info Bar ──────────────────────────────────────────
@@ -221,41 +223,39 @@ export async function generateReceiptPDF(args: ReceiptPDFArgs): Promise<Buffer> 
     doc.y += 4;
     doc.moveTo(leftMargin, doc.y).lineTo(leftMargin + pageWidth, doc.y)
         .strokeColor(COLORS.border).lineWidth(0.5).stroke();
-    doc.y += 8;
+    doc.y += 10;
 
-    const infoLabelWidth = 100;
-    const colWidth = pageWidth / 2 - 10;
-
-    // Left column
     const donorInfoY = doc.y;
+    const infoLabelWidth = 90;
+    const colWidth = (pageWidth - 20) / 2;
 
-    // Name
+    // Left column (Name & Email)
     doc.font("Helvetica-Bold").fontSize(9.5).fillColor(COLORS.label)
         .text("Name:", leftMargin, donorInfoY, { width: infoLabelWidth });
     doc.font("Helvetica").fontSize(9.5).fillColor(COLORS.text)
         .text(pdfArgs.customerName || "Valued Donor", leftMargin + infoLabelWidth, donorInfoY, { width: colWidth - infoLabelWidth });
+    const nameEndY = doc.y;
 
-    // Email
     doc.font("Helvetica-Bold").fontSize(9.5).fillColor(COLORS.label)
-        .text("Email:", leftMargin, donorInfoY + 18, { width: infoLabelWidth });
+        .text("Email:", leftMargin, nameEndY + 4, { width: infoLabelWidth });
     doc.font("Helvetica").fontSize(9.5).fillColor(COLORS.text)
-        .text(pdfArgs.customerEmail || "", leftMargin + infoLabelWidth, donorInfoY + 18, { width: colWidth - infoLabelWidth });
+        .text(pdfArgs.customerEmail || "N/A", leftMargin + infoLabelWidth, nameEndY + 4, { width: colWidth - infoLabelWidth });
+    const leftColEndY = doc.y;
 
     // Right column — Billing Address
     const rightColX = leftMargin + colWidth + 20;
     doc.font("Helvetica-Bold").fontSize(9.5).fillColor(COLORS.label)
         .text("Billing Address:", rightColX, donorInfoY, { width: infoLabelWidth });
 
-    const addressText = pdfArgs.billingAddress || "";
-    const addressY = donorInfoY;
+    const addressText = pdfArgs.billingAddress || "N/A";
     doc.font("Helvetica").fontSize(9.5).fillColor(COLORS.text)
-        .text(addressText, rightColX + infoLabelWidth, addressY, { width: colWidth - infoLabelWidth - 10 });
+        .text(addressText, rightColX + infoLabelWidth, donorInfoY, { width: colWidth - infoLabelWidth });
+    const rightColEndY = doc.y;
 
-    // Move Y past the donor info section
-    doc.y = Math.max(doc.y, donorInfoY + 50);
+    // Move Y past the taller of left or right column
+    doc.y = Math.max(leftColEndY, rightColEndY) + 14;
 
     // ─── Section: Donation Summary ─────────────────────────
-    doc.y += 6;
     doc.font("Helvetica-Bold").fontSize(9.5).fillColor(accent)
         .text("DONATION SUMMARY", leftMargin, doc.y);
     doc.y += 4;
@@ -277,11 +277,16 @@ export async function generateReceiptPDF(args: ReceiptPDFArgs): Promise<Buffer> 
     }
 
     for (const [label, value] of summaryItems) {
+        const itemY = doc.y;
         doc.font("Helvetica-Bold").fontSize(9.5).fillColor(COLORS.label)
-            .text(label, leftMargin, doc.y, { width: infoLabelWidth, continued: false });
+            .text(label, leftMargin, itemY, { width: infoLabelWidth });
+        const labelEndY = doc.y;
+
         doc.font("Helvetica").fontSize(9.5).fillColor(COLORS.text)
-            .text(value, leftMargin + infoLabelWidth, doc.y - 14, { width: pageWidth - infoLabelWidth });
-        doc.y += 4;
+            .text(value, leftMargin + infoLabelWidth, itemY, { width: pageWidth - infoLabelWidth });
+        const valueEndY = doc.y;
+
+        doc.y = Math.max(labelEndY, valueEndY) + 4;
     }
 
     // ─── Amount Box ────────────────────────────────────────
@@ -318,7 +323,7 @@ export async function generateReceiptPDF(args: ReceiptPDFArgs): Promise<Buffer> 
             .text(vars.amountStr, leftMargin + 14, amountBoxY + 24);
     }
     doc.restore();
-    doc.y = amountBoxY + amountBoxHeight + 12;
+    doc.y = amountBoxY + amountBoxHeight + 14;
 
     // ─── Section: Acknowledgement ──────────────────────────
     doc.font("Helvetica-Bold").fontSize(9.5).fillColor(accent)
@@ -329,47 +334,46 @@ export async function generateReceiptPDF(args: ReceiptPDFArgs): Promise<Buffer> 
     doc.y += 8;
 
     const acknowledgement = resolveAcknowledgement(pdfArgs, isVoided, vars);
-    doc.font("Helvetica").fontSize(10).fillColor(COLORS.text)
+    doc.font("Helvetica").fontSize(9.5).fillColor(COLORS.text)
         .text(acknowledgement, leftMargin, doc.y, {
             width: pageWidth,
             lineGap: 3,
         });
 
-    doc.y += 12;
+    doc.y += 14;
 
     // ─── Signature Block ───────────────────────────────────
-    doc.font("Helvetica-Oblique").fontSize(9.5).fillColor(COLORS.label)
+    doc.font("Helvetica-Oblique").fontSize(9).fillColor(COLORS.label)
         .text("Authorized by,", leftMargin, doc.y);
     doc.y += 4;
     doc.font("Helvetica-Bold").fontSize(9.5).fillColor(COLORS.text)
         .text("Smart Donate Team", leftMargin, doc.y);
     doc.y += 2;
-    doc.font("Helvetica").fontSize(9.5).fillColor(COLORS.label)
+    doc.font("Helvetica").fontSize(9).fillColor(COLORS.label)
         .text(vars.shopDisplayName, leftMargin, doc.y);
+    doc.y += 16;
 
     // ─── Footer ────────────────────────────────────────────
-    doc.y += 20;
-    doc.moveTo(leftMargin, doc.y).lineTo(leftMargin + pageWidth, doc.y)
+    const footerY = Math.max(doc.y, doc.page.height - doc.page.margins.bottom - 35);
+    doc.moveTo(leftMargin, footerY).lineTo(leftMargin + pageWidth, footerY)
         .strokeColor(COLORS.border).lineWidth(0.5).stroke();
-    doc.y += 8;
 
     doc.font("Helvetica").fontSize(7.5).fillColor(COLORS.footer);
     doc.text(
         "This receipt was generated by Smart Donate · Recurring & Receipts. Please retain this document for your records.",
-        leftMargin, doc.y,
+        leftMargin, footerY + 6,
         { width: pageWidth, align: "center" }
     );
-    doc.y += 4;
 
     if (isVoided) {
         doc.text(
             "VOID — This receipt has been cancelled and is not valid for tax deductions.",
-            leftMargin, doc.y,
+            leftMargin, footerY + 16,
             { width: pageWidth, align: "center" }
         );
     } else {
         const footerNote = pdfArgs.footerNote || `Generated on ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`;
-        doc.text(footerNote, leftMargin, doc.y, { width: pageWidth, align: "center" });
+        doc.text(footerNote, leftMargin, footerY + 16, { width: pageWidth, align: "center" });
     }
 
     doc.end();
