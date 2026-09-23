@@ -344,13 +344,13 @@ export default function EmailSettingsPage() {
             // Using a unique key from the data if possible, or just checking if we already handled this fetcher run
             if (lastHandledSubmissionRef.current !== "handled") {
                 lastHandledSubmissionRef.current = "handled";
-                shopify.toast.show("Email settings saved successfully");
+                shopify.toast.show(verticalSection === "receipts" ? "Receipt settings saved successfully" : "Email settings saved successfully");
                 setInitialSettings({ ...settings });
             }
         } else if (fetcher.state === "submitting") {
             lastHandledSubmissionRef.current = "submitting";
         }
-    }, [fetcher.state, fetcher.data, shopify, settings]);
+    }, [fetcher.state, fetcher.data, shopify, settings, verticalSection]);
 
     const hasChanges = Object.keys(settings).some(
         (key) => settings[key as keyof EmailSettings] !== initialSettings[key as keyof EmailSettings]

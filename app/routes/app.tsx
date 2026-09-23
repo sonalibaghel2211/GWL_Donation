@@ -46,7 +46,7 @@ export default function App() {
                     <Link to="/app/preset-donation">Donation Preferences</Link>
                     <Link to="/app/roundup">Round Up Donation</Link>
                     <Link to="/app/portion-sale">Portion of Sale</Link>
-                    <Link to="/app/email-settings">Email Settings</Link>
+                    <Link to="/app/email-settings">Email/Recepit Settings</Link>
 
                     <Link to="/app/donation-activity">Donation Activity</Link>
                     <Link to="/app/track-donation">Track Donation</Link>
