@@ -251,7 +251,7 @@ export default function DonationActivity() {
                         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                             <span style={{ fontSize: "16px" }}>ℹ️</span>
                             <span>
-                                <strong>Paid Plan Features (Advanced & Pro):</strong> Automatic receipt emails and PDF receipt downloads require an Advanced or Pro plan. Order tags, customer tags, order notes, activity logs, and totals remain 100% active on Free plan.
+                                <strong>Paid Plan Features (Advanced & Pro):</strong> Automatic receipt emails require an Advanced or Pro plan. Order tags, customer tags, order notes, activity logs, PDF receipt downloads, and totals remain 100% active on Free plan.
                             </span>
                         </div>
                         <Link to="/app/pricing" style={{ color: "#6C4A79", fontWeight: "600", textDecoration: "none", whiteSpace: "nowrap", marginLeft: "16px" }}>

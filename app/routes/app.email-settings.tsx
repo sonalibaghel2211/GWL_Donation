@@ -984,24 +984,26 @@ export default function EmailSettingsPage() {
                                         </div>
 
                                         <s-stack direction="block" gap="base">
-                                            {!hasActiveSubscription(subscription, "canDownloadReceipt") && (
-                                                <s-box padding="large-200" background="subdued" borderRadius="base" borderWidth="base" style={{ marginBottom: "16px" }}>
-                                                    <s-stack direction="block" gap="base">
-                                                        <div style={{ textAlign: "center", width: "100%" }}>
-                                                            <s-text type="strong">Plan Upgrade Required</s-text>
-                                                            <s-box padding-block-start="base">
-                                                                <s-text color="subdued">
-                                                                    PDF receipt downloads and customization are available on the <strong>Advanced</strong> and <strong>Pro</strong> plans.
-                                                                </s-text>
-                                                            </s-box>
-                                                            <s-box padding-block-start="base">
-                                                                <Link to="/app/pricing" style={{ textDecoration: "none" }}>
-                                                                    <s-button variant="primary">View Pricing Plans</s-button>
-                                                                </Link>
-                                                            </s-box>
-                                                        </div>
-                                                    </s-stack>
-                                                </s-box>
+                                            {!hasActiveSubscription(subscription, "canEditTemplates") && (
+                                                <div style={{ marginBottom: "16px" }}>
+                                                    <s-box padding="large-200" background="subdued" borderRadius="base" borderWidth="base">
+                                                        <s-stack direction="block" gap="base">
+                                                            <div style={{ textAlign: "center", width: "100%" }}>
+                                                                <s-text type="strong">View Only Mode</s-text>
+                                                                <s-box padding-block-start="base">
+                                                                    <s-text color="subdued">
+                                                                        PDF receipt downloads are active on your Free plan. Editing PDF receipt template text requires the <strong>Pro</strong> plan.
+                                                                    </s-text>
+                                                                </s-box>
+                                                                <s-box padding-block-start="base">
+                                                                    <Link to="/app/pricing" style={{ textDecoration: "none" }}>
+                                                                        <s-button variant="primary">View Pricing Plans</s-button>
+                                                                    </Link>
+                                                                </s-box>
+                                                            </div>
+                                                        </s-stack>
+                                                    </s-box>
+                                                </div>
                                             )}
                                             <div style={{ padding: "4px 0" }}>
                                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>

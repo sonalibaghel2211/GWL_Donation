@@ -23,7 +23,7 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
         canUsePercentageDonation: false,
         canUseRecurringDonations: false,
         canSendReceiptEmail: false,
-        canDownloadReceipt: false,
+        canDownloadReceipt: true,
         canSendRefundEmail: false,
         canSendCancelEmail: false,
         canEditTemplates: false,
@@ -67,7 +67,7 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
 
 export function checkFeatureAccess(plan: string | null | undefined, feature: keyof PlanFeatures, status?: string | null): boolean {
     if (status && status !== "active" && status !== "pending") {
-        return false;
+        return !!PLAN_FEATURES.basic[feature];
     }
     const planType = (plan as PlanType) || "basic";
     const features = PLAN_FEATURES[planType] || PLAN_FEATURES.basic;
@@ -79,7 +79,7 @@ export function hasActiveSubscription(
     requiredFeature: keyof PlanFeatures
 ): boolean {
     if (!subscription || subscription.status !== "active") {
-        return false;
+        return !!PLAN_FEATURES.basic[requiredFeature];
     }
     const planType = (subscription.plan as PlanType) || "basic";
     const features = PLAN_FEATURES[planType] || PLAN_FEATURES.basic;
