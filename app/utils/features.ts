@@ -100,7 +100,7 @@ export const PLAN_DETAILS = {
     },
     pro: {
         name: "Pro",
-        price: "$9.99",
+        price: "$9.00",
         description: "Full power for your store",
     },
 };

@@ -207,7 +207,7 @@ export default function Documentation() {
                 <th scope="col">Feature</th>
                 <th scope="col">Basic $0.00/mo</th>
                 <th scope="col">Advanced $4.99/mo</th>
-                <th scope="col">Pro $9.99/mo</th>
+                <th scope="col">Pro $9.00/mo</th>
               </tr>
             </thead>
             <tbody>

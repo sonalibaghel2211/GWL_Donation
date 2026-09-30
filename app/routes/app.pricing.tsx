@@ -527,7 +527,7 @@ export default function PricingPage() {
                             <div style={{ fontSize: "18px", fontWeight: "700", marginBottom: "6px" }}>Pro</div>
                             <div style={{ fontSize: "13px", color: "#6D7175", marginBottom: "20px" }}>{PLAN_DETAILS.pro.description}</div>
                             <div style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
-                                <span style={{ fontSize: "36px", fontWeight: "800", color: activePlan === "pro" ? "#6C4A79" : "inherit" }}>{moneyFormatter.format(9.99)}</span>
+                                <span style={{ fontSize: "36px", fontWeight: "800", color: activePlan === "pro" ? "#6C4A79" : "inherit" }}>{moneyFormatter.format(9.00)}</span>
                                 <span style={{ fontSize: "14px", color: "#6D7175" }}>/ month</span>
                             </div>
                         </div>
