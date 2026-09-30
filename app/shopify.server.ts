@@ -116,8 +116,19 @@ const shopify = shopifyApp({
     afterAuth: async ({ session }) => {
       try {
         await shopify.registerWebhooks({ session });
+        await prisma.planSubscription.upsert({
+          where: { shop: session.shop },
+          update: {},
+          create: {
+            shop: session.shop,
+            plan: "basic",
+            status: "active",
+            pendingPlan: null,
+            subscriptionId: null,
+          },
+        });
       } catch (e) {
-        console.error(`[Shopify Auth] Failed to register webhooks for ${session.shop}:`, e);
+        console.error(`[Shopify Auth] Failed during afterAuth for ${session.shop}:`, e);
       }
     },
   },

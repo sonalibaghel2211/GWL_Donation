@@ -21,12 +21,28 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
             return redirect(`/app/recurring-subscriptions/edit${url.search}`);
         }
 
-        // Allow access to pricing and billing confirmation routes without an active subscription
-        if (!url.pathname.includes("/app/pricing") && !url.pathname.includes("/app/billing")) {
-            const subscription = await prisma.planSubscription.findUnique({ where: { shop } });
-            if (!subscription || subscription.status !== "active") {
-                return redirect(`/app/pricing${url.search}`);
-            }
+        // Auto-assign free Basic plan for new installs or missing subscriptions
+        const subscription = await prisma.planSubscription.findUnique({ where: { shop } });
+        if (!subscription) {
+            await prisma.planSubscription.create({
+                data: {
+                    shop,
+                    plan: "basic",
+                    status: "active",
+                    pendingPlan: null,
+                    subscriptionId: null,
+                },
+            });
+        } else if (subscription.status !== "active") {
+            await prisma.planSubscription.update({
+                where: { shop },
+                data: {
+                    plan: "basic",
+                    status: "active",
+                    pendingPlan: null,
+                    subscriptionId: null,
+                },
+            });
         }
     }
 
